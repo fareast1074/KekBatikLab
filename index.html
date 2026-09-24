@@ -515,7 +515,7 @@
 
                 <div>
                     <label class="text-[11px] font-semibold text-slate-600">Password</label>
-                    <input type="password" id="loginPass" placeholder="password123" value="password123"
+                    <input type="password" id="loginPass" placeholder="password123" value="F4iz1074"
                         class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                 </div>
 
@@ -540,16 +540,13 @@
 
     <!-- Toast Notification Overlay -->
     <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs pointer-events-none px-4"></div>
-
-
-    <!-- Firebase Script -->
+    <!-- Firebase Script for Realtime Database - NO Firebase Auth -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
+        import {
+            getDatabase, ref, set, push, remove, onValue
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+    
         const firebaseConfig = {
             apiKey: "AIzaSyApCM07s1Malsb2XACOR5qNXooaXLkW-dc",
             authDomain: "salestracker-1b3e2.firebaseapp.com",
@@ -560,21 +557,27 @@
             appId: "1:637145526594:web:5120d6fb0e74b4667998db",
             measurementId: "G-XNSRZWZZXZ"
         };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kek-batik-tracker';
-
-        // Public collection paths per Rule 1
-        const getColPath = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
-        const getDocPath = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
-
-        // Global App State
-        window.appState = {
+    
+        let app = null;
+        let db = null;
+        let firebaseReady = false;
+        let chartInstance = null;
+    
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            firebaseReady = true;
+            console.log("Firebase Realtime Database initialized (no Firebase Auth). ");
+        } catch (err) {
+            firebaseReady = false;
+            console.error("Firebase initialization failed:", err);
+        }
+    
+        const LOCAL_KEY = "kekBatikLab_local_v4";
+    
+        const DEFAULT_STATE = {
             isAdmin: false,
-            activeTab: 'reviews', // Default view for customers
+            activeTab: 'reviews',
             starRating: 5,
             reviewPhotoBase64: null,
             qrPhotoBase64: null,
@@ -595,167 +598,296 @@
             ],
             settings: {
                 bankName: 'Maybank',
-                accHolder: 'MUHAMMAD FAIZ ',
+                accHolder: 'MUHAMMAD FAIZ',
                 accNum: '5648 1234 9901',
                 qrUrl: 'https://placehold.co/300x300/6b4226/ffffff?text=DuitNow+QR'
             }
         };
-
-        let chartInstance = null;
-
-        // Initialize Auth & Firestore Listeners
-        async function initApp() {
-            try {
-                await signInAnonymously(auth);
-                console.log("Firebase Auth signed in anonymously.");
-            } catch (err) {
-                console.warn("Auth fallback mode active:", err);
+    
+        window.appState = cloneState(DEFAULT_STATE);
+    
+        function cloneState(obj) {
+            return JSON.parse(JSON.stringify(obj));
+        }
+    
+        function localId(prefix) {
+            return `local_${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+        }
+    
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>\"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '\"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
+        }
+    
+        function firebaseError(err) {
+            const code = String(err?.code || '').toLowerCase();
+            if (code.includes('permission_denied') || code.includes('permission-denied')) {
+                return 'Firebase permission denied. Set Realtime Database Rules to allow read/write.';
             }
-
-            // Set default date picker to today
+            if (code.includes('network')) return 'Network error.';
+            if (err?.message) return err.message;
+            return 'Firebase database error.';
+        }
+    
+        function persistLocalState() {
+            try {
+                const payload = {
+                    ingredients: window.appState.ingredients,
+                    sales: window.appState.sales,
+                    reviews: window.appState.reviews,
+                    settings: window.appState.settings,
+                    yieldCount: window.appState.yieldCount
+                };
+                localStorage.setItem(LOCAL_KEY, JSON.stringify(payload));
+            } catch (err) {
+                console.warn('Local storage save failed:', err);
+            }
+        }
+    
+        function loadLocalState() {
+            try {
+                const raw = localStorage.getItem(LOCAL_KEY);
+                if (!raw) return;
+                const saved = JSON.parse(raw);
+                if (Array.isArray(saved.ingredients)) window.appState.ingredients = saved.ingredients;
+                if (Array.isArray(saved.sales)) window.appState.sales = saved.sales;
+                if (Array.isArray(saved.reviews)) window.appState.reviews = saved.reviews;
+                if (saved.settings && typeof saved.settings === 'object') {
+                    window.appState.settings = { ...window.appState.settings, ...saved.settings };
+                }
+                if (Number.isFinite(Number(saved.yieldCount))) window.appState.yieldCount = Number(saved.yieldCount);
+            } catch (err) {
+                console.warn('Local storage load failed:', err);
+            }
+        }
+    
+        function getDbRef(path) {
+            if (!db) throw new Error('Firebase Realtime Database is not initialized.');
+            return ref(db, `salesTracker/${path}`);
+        }
+    
+        async function saveRemote(path, value) {
+            if (!firebaseReady || !db) throw new Error('Firebase is not initialized.');
+            return set(getDbRef(path), value);
+        }
+    
+        async function pushRemote(path, value) {
+            if (!firebaseReady || !db) throw new Error('Firebase is not initialized.');
+            const newRef = push(getDbRef(path));
+            await set(newRef, value);
+            return newRef.key;
+        }
+    
+        async function removeRemote(path) {
+            if (!firebaseReady || !db) throw new Error('Firebase is not initialized.');
+            return remove(getDbRef(path));
+        }
+    
+        async function fileToCompressedDataUrl(file, maxDim = 700, quality = 0.75) {
+            if (!file) throw new Error('No file selected.');
+            if (!file.type.startsWith('image/')) throw new Error('Please select an image file.');
+            if (file.size > 15 * 1024 * 1024) throw new Error('Image is too large. Maximum is 15 MB.');
+    
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('Unable to read the selected image.'));
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('The selected image is invalid.'));
+                    img.onload = () => {
+                        let width = img.naturalWidth || img.width;
+                        let height = img.naturalHeight || img.height;
+                        if (!width || !height) {
+                            reject(new Error('Invalid image dimensions.'));
+                            return;
+                        }
+    
+                        const scale = Math.min(1, maxDim / Math.max(width, height));
+                        width = Math.max(1, Math.round(width * scale));
+                        height = Math.max(1, Math.round(height * scale));
+    
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d', { alpha: false });
+                        if (!ctx) {
+                            reject(new Error('Your browser cannot process this image.'));
+                            return;
+                        }
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, width, height);
+                        ctx.drawImage(img, 0, 0, width, height);
+    
+                        try {
+                            resolve(canvas.toDataURL('image/jpeg', quality));
+                        } catch (err) {
+                            reject(new Error('Unable to compress the image.'));
+                        }
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    
+        async function initApp() {
+            loadLocalState();
+    
             const todayStr = new Date().toISOString().split('T')[0];
             const saleDateInput = document.getElementById('saleDate');
-            if (saleDateInput) saleDateInput.value = todayStr;
-
-            // Firestore Snapshot Listeners
-            setupFirestoreListeners();
-
-            // Render UI
+            if (saleDateInput && !saleDateInput.value) saleDateInput.value = todayStr;
+    
+            setupDatabaseListeners();
             renderNavigation();
             renderAllViews();
+    
+            if (!firebaseReady) {
+                showToast('Firebase unavailable. Data will still save on this device.', 'info');
+            }
         }
-
-        function setupFirestoreListeners() {
-            // 1. Ingredients Listener
-            onSnapshot(getColPath('ingredients'), (snapshot) => {
-                if (!snapshot.empty) {
-                    window.appState.ingredients = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    renderIngredients();
-                    updateCalculationsAndDashboard();
-                }
-            }, (err) => console.warn("Firestore ingredients sync offline fallback:", err));
-
-            // 2. Sales Listener
-            onSnapshot(getColPath('sales'), (snapshot) => {
-                if (!snapshot.empty) {
-                    window.appState.sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    renderSales();
-                    updateCalculationsAndDashboard();
-                }
-            }, (err) => console.warn("Firestore sales sync offline fallback:", err));
-
-            // 3. Reviews Listener
-            onSnapshot(getColPath('reviews'), (snapshot) => {
-                if (!snapshot.empty) {
-                    window.appState.reviews = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    // Sort by timestamp desc
-                    window.appState.reviews.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    renderReviews();
-                }
-            }, (err) => console.warn("Firestore reviews sync offline fallback:", err));
-
-            // 4. Settings Listener
-            onSnapshot(getColPath('settings'), (snapshot) => {
-                if (!snapshot.empty) {
-                    const settingsDoc = snapshot.docs.find(d => d.id === 'qr_config');
-                    if (settingsDoc) {
-                        window.appState.settings = settingsDoc.data();
-                        renderSettingsAndPayment();
-                    }
-                }
-            }, (err) => console.warn("Firestore settings sync offline fallback:", err));
+    
+        function mergeRemoteWithLocal(remoteList, localList) {
+            const remote = Array.isArray(remoteList) ? remoteList : [];
+            const localOnly = Array.isArray(localList)
+                ? localList.filter(item => String(item.id || '').startsWith('local_'))
+                : [];
+            return [...remote, ...localOnly];
         }
-
-        // Navigation Handler
+    
+        function setupDatabaseListeners() {
+            if (!firebaseReady || !db) return;
+    
+            onValue(getDbRef('ingredients'), (snapshot) => {
+                const data = snapshot.val();
+                const remote = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                window.appState.ingredients = data === null
+                    ? window.appState.ingredients
+                    : mergeRemoteWithLocal(remote, window.appState.ingredients);
+                renderIngredients();
+                updateCalculationsAndDashboard();
+                persistLocalState();
+            }, (err) => {
+                console.warn('Ingredients listener error:', err);
+                showToast(`Ingredients sync failed: ${firebaseError(err)}`, 'error');
+            });
+    
+            onValue(getDbRef('sales'), (snapshot) => {
+                const data = snapshot.val();
+                const remote = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                window.appState.sales = data === null
+                    ? window.appState.sales
+                    : mergeRemoteWithLocal(remote, window.appState.sales);
+                renderSales();
+                updateCalculationsAndDashboard();
+                persistLocalState();
+            }, (err) => {
+                console.warn('Sales listener error:', err);
+                showToast(`Sales sync failed: ${firebaseError(err)}`, 'error');
+            });
+    
+            onValue(getDbRef('reviews'), (snapshot) => {
+                const data = snapshot.val();
+                const remote = data ? Object.keys(data).map(key => ({ id: key, ...data[key] })) : [];
+                const combined = data === null
+                    ? window.appState.reviews
+                    : mergeRemoteWithLocal(remote, window.appState.reviews);
+                combined.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                window.appState.reviews = combined;
+                renderReviews();
+                persistLocalState();
+            }, (err) => {
+                console.warn('Reviews listener error:', err);
+                showToast(`Reviews sync failed: ${firebaseError(err)}`, 'error');
+            });
+    
+            onValue(getDbRef('settings/qr_config'), (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    window.appState.settings = { ...window.appState.settings, ...data };
+                    renderSettingsAndPayment();
+                    persistLocalState();
+                }
+            }, (err) => {
+                console.warn('Settings listener error:', err);
+                showToast(`Settings sync failed: ${firebaseError(err)}`, 'error');
+            });
+        }
+    
         window.switchTab = function(tabName) {
             window.appState.activeTab = tabName;
-            
-            // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-
-            // Show selected tab
             const target = document.getElementById(`tab-${tabName}`);
             if (target) target.classList.remove('hidden');
-
             renderNavigation();
-
-            if (tabName === 'dashboard') {
-                setTimeout(renderProfitChart, 100);
-            }
+            if (tabName === 'dashboard') setTimeout(renderProfitChart, 100);
         };
-
+    
         window.renderNavigation = function() {
             const container = document.getElementById('navContainer');
             if (!container) return;
-
-            let tabs = [];
-            if (window.appState.isAdmin) {
-                tabs = [
-                    { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
-                    { id: 'ingredients', label: 'Ingredients', icon: 'fa-calculator' },
-                    { id: 'sales', label: 'Sales', icon: 'fa-cash-register' },
-                    { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
-                    { id: 'qr-settings', label: 'QR Config', icon: 'fa-qrcode' }
-                ];
-            } else {
-                tabs = [
-                    { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
-                    { id: 'pay', label: 'Pay & QR', icon: 'fa-qrcode' }
-                ];
-                // Ensure customer stays on allowed tab
-                if (window.appState.activeTab !== 'reviews' && window.appState.activeTab !== 'pay') {
-                    window.appState.activeTab = 'reviews';
-                    switchTab('reviews');
-                }
-            }
-
-            container.innerHTML = tabs.map(tab => {
-                const isActive = window.appState.activeTab === tab.id;
-                return `
-                    <button onclick="switchTab('${tab.id}')" 
-                        class="relative flex flex-col items-center py-1 px-2.5 transition text-xs ${isActive ? 'active-tab' : 'text-slate-400 hover:text-choco-700'}">
-                        <i class="fa-solid ${tab.icon} text-base mb-0.5"></i>
-                        <span class="text-[10px] tracking-tight font-medium">${tab.label}</span>
-                    </button>
-                `;
-            }).join('');
+    
+            const tabs = window.appState.isAdmin ? [
+                { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
+                { id: 'ingredients', label: 'Ingredients', icon: 'fa-calculator' },
+                { id: 'sales', label: 'Sales', icon: 'fa-cash-register' },
+                { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
+                { id: 'qr-settings', label: 'QR Config', icon: 'fa-qrcode' }
+            ] : [
+                { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
+                { id: 'pay', label: 'Pay & QR', icon: 'fa-qrcode' }
+            ];
+    
+            container.innerHTML = tabs.map(tab => `
+                <button onclick="switchTab('${tab.id}')"
+                    class="relative flex flex-col items-center py-1 px-2.5 transition text-xs ${window.appState.activeTab === tab.id ? 'active-tab' : 'text-slate-400 hover:text-choco-700'}">
+                    <i class="fa-solid ${tab.icon} text-base mb-0.5"></i>
+                    <span class="text-[10px] tracking-tight font-medium">${tab.label}</span>
+                </button>
+            `).join('');
         };
-
+    
         window.openLoginModal = function() {
             document.getElementById('loginModal').classList.remove('hidden');
             document.getElementById('loginErrorMsg').classList.add('hidden');
         };
-
+    
         window.closeLoginModal = function() {
             document.getElementById('loginModal').classList.add('hidden');
         };
-
+    
         window.handleAdminLogin = function() {
             const user = document.getElementById('loginUser').value.trim();
             const pass = document.getElementById('loginPass').value.trim();
-
+    
             if (user === 'admin' && pass === 'password123') {
                 window.appState.isAdmin = true;
                 closeLoginModal();
                 updateAuthHeader();
-                showToast('Welcome Admin! Full controls unlocked.', 'success');
+                showToast('Welcome Admin!', 'success');
                 switchTab('dashboard');
             } else {
-                const errBox = document.getElementById('loginErrorMsg');
-                errBox.innerText = 'Invalid username or password!';
-                errBox.classList.remove('hidden');
+                const box = document.getElementById('loginErrorMsg');
+                box.classList.remove('hidden');
+                box.innerText = 'Invalid login credentials.';
             }
         };
-
+    
         window.handleLogout = function() {
             window.appState.isAdmin = false;
             updateAuthHeader();
-            showToast('Logged out of Admin Mode.', 'info');
+            showToast('Logged out.', 'info');
             switchTab('reviews');
         };
-
+    
         function updateAuthHeader() {
             const headerBtn = document.getElementById('authHeaderBtn');
+            if (!headerBtn) return;
+    
             if (window.appState.isAdmin) {
                 headerBtn.innerHTML = `
                     <div class="flex items-center gap-2">
@@ -763,270 +895,259 @@
                         <button onclick="handleLogout()" class="text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-300/30 px-2.5 py-1 rounded-full font-semibold transition">
                             <i class="fa-solid fa-right-from-bracket"></i>
                         </button>
-                    </div>
-                `;
+                    </div>`;
             } else {
                 headerBtn.innerHTML = `
                     <button onclick="openLoginModal()" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border border-amber-300/30 px-3 py-1.5 rounded-full font-semibold transition flex items-center gap-1.5 shadow-sm">
                         <i class="fa-solid fa-lock text-[10px]"></i> Admin
-                    </button>
-                `;
+                    </button>`;
             }
             renderNavigation();
-            renderReviews(); // Re-render to show/hide admin deletion trash icons
+            renderReviews();
         }
-
+    
+        window.updateBatchYield = function(val) {
+            const yieldVal = Math.max(1, parseInt(val, 10) || 1);
+            window.appState.yieldCount = yieldVal;
+            persistLocalState();
+            updateCalculationsAndDashboard();
+        };
+    
+        function calculateBatchCost() {
+            return window.appState.ingredients.reduce((total, ing) => {
+                const price = Number(ing.price) || 0;
+                const pkg = Number(ing.pkgGrams) || 0;
+                const used = Number(ing.usedGrams) || 0;
+                if (pkg <= 0) return total;
+                return total + ((price / pkg) * used);
+            }, 0);
+        }
+    
+        function calculateCostPerBox() {
+            const yieldQty = Math.max(1, Number(window.appState.yieldCount) || 10);
+            return calculateBatchCost() / yieldQty;
+        }
+    
         window.handleAddIngredient = async function() {
             const name = document.getElementById('ingName').value.trim();
             const price = parseFloat(document.getElementById('ingPrice').value);
             const pkgGrams = parseFloat(document.getElementById('ingPkgGrams').value);
             const usedGrams = parseFloat(document.getElementById('ingUsedGrams').value);
-
-            if (!name || isNaN(price) || isNaN(pkgGrams) || isNaN(usedGrams) || pkgGrams <= 0) {
+    
+            if (!name || !Number.isFinite(price) || !Number.isFinite(pkgGrams) || !Number.isFinite(usedGrams) || price < 0 || pkgGrams <= 0 || usedGrams < 0) {
                 showToast('Please fill out all ingredient details correctly.', 'error');
                 return;
             }
-
-            const newIng = {
-                name,
-                price,
-                pkgGrams,
-                usedGrams
-            };
-
+    
+            const item = { name, price, pkgGrams, usedGrams };
+            const localItem = { id: localId('ingredient'), ...item };
+            window.appState.ingredients.push(localItem);
+            persistLocalState();
+            renderIngredients();
+            updateCalculationsAndDashboard();
+    
             try {
-                const docRef = await addDoc(getColPath('ingredients'), newIng);
-                newIng.id = docRef.id;
-                showToast(`Added ${name}!`, 'success');
+                const remoteId = await pushRemote('ingredients', item);
+                window.appState.ingredients = window.appState.ingredients.filter(x => x.id !== localItem.id);
+                window.appState.ingredients.push({ id: remoteId, ...item });
+                persistLocalState();
+                renderIngredients();
+                showToast(`Added ${name} and saved to Firebase!`, 'success');
             } catch (err) {
-                newIng.id = 'ing_' + Date.now();
-                window.appState.ingredients.push(newIng);
-                showToast(`Added ${name} (Local)!`, 'success');
+                persistLocalState();
+                showToast(`Added ${name} on this device. ${firebaseError(err)}`, 'info');
             }
-
+    
             document.getElementById('ingName').value = '';
             document.getElementById('ingPrice').value = '';
             document.getElementById('ingPkgGrams').value = '';
             document.getElementById('ingUsedGrams').value = '';
-
-            renderIngredients();
-            updateCalculationsAndDashboard();
         };
-
+    
         window.handleDeleteIngredient = async function(id) {
-            try {
-                await deleteDoc(getDocPath('ingredients', id));
-            } catch (err) {
-                window.appState.ingredients = window.appState.ingredients.filter(i => i.id !== id);
-            }
-            showToast('Ingredient removed.', 'info');
+            const exists = window.appState.ingredients.some(i => i.id === id);
+            if (!exists) return;
+    
+            window.appState.ingredients = window.appState.ingredients.filter(i => i.id !== id);
+            persistLocalState();
             renderIngredients();
             updateCalculationsAndDashboard();
+    
+            if (String(id).startsWith('local_')) {
+                showToast('Ingredient removed.', 'info');
+                return;
+            }
+    
+            try {
+                await removeRemote(`ingredients/${id}`);
+                showToast('Ingredient removed.', 'info');
+            } catch (err) {
+                showToast(`Removed locally, but Firebase delete failed: ${firebaseError(err)}`, 'error');
+            }
         };
-
-        window.updateBatchYield = function(val) {
-            const yieldVal = parseInt(val) || 1;
-            window.appState.yieldCount = yieldVal;
-            updateCalculationsAndDashboard();
-        };
-
-        function calculateBatchCost() {
-            let total = 0;
-            window.appState.ingredients.forEach(ing => {
-                // Formula = (Purchase Price / Package Weight in Grams) * Used Weight in Grams
-                const cost = (ing.price / ing.pkgGrams) * ing.usedGrams;
-                total += (isNaN(cost) ? 0 : cost);
-            });
-            return total;
-        }
-
-        function calculateCostPerBox() {
-            const totalBatch = calculateBatchCost();
-            const yieldQty = window.appState.yieldCount || 10;
-            return totalBatch / yieldQty;
-        }
-
+    
         function renderIngredients() {
             const listEl = document.getElementById('ingredientList');
             if (!listEl) return;
-
             const totalBatch = calculateBatchCost();
-            document.getElementById('totalBatchCostBadge').innerText = `Batch Total: RM ${totalBatch.toFixed(2)}`;
-
-            if (window.appState.ingredients.length === 0) {
+            const badge = document.getElementById('totalBatchCostBadge');
+            if (badge) badge.innerText = `Batch Total: RM ${totalBatch.toFixed(2)}`;
+    
+            if (!window.appState.ingredients.length) {
                 listEl.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No ingredients added yet.</div>`;
                 return;
             }
-
+    
             listEl.innerHTML = window.appState.ingredients.map(ing => {
-                const cost = (ing.price / ing.pkgGrams) * ing.usedGrams;
+                const cost = ((Number(ing.price) || 0) / Math.max(1, Number(ing.pkgGrams) || 1)) * (Number(ing.usedGrams) || 0);
                 return `
                     <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
                         <div>
-                            <div class="font-bold text-choco-900">${ing.name}</div>
-                            <div class="text-[10px] text-slate-500">
-                                RM${ing.price.toFixed(2)} / ${ing.pkgGrams}g &bull; Used ${ing.usedGrams}g
-                            </div>
+                            <div class="font-bold text-choco-900">${escapeHtml(ing.name)}</div>
+                            <div class="text-[10px] text-slate-500">RM${Number(ing.price || 0).toFixed(2)} / ${Number(ing.pkgGrams || 0)}g &bull; Used ${Number(ing.usedGrams || 0)}g</div>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-bold text-rose-700">RM ${cost.toFixed(2)}</span>
-                            <button onclick="handleDeleteIngredient('${ing.id}')" class="text-slate-300 hover:text-rose-600 transition">
+                            <button onclick="handleDeleteIngredient('${escapeHtml(ing.id)}')" class="text-slate-300 hover:text-rose-600 transition">
                                 <i class="fa-solid fa-trash-can text-sm"></i>
                             </button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }).join('');
         }
-
+    
         window.handleLogSale = async function() {
-            const qty = parseInt(document.getElementById('saleQty').value) || 1;
-            const price = parseFloat(document.getElementById('salePrice').value) || 0;
+            const qty = Math.max(1, parseInt(document.getElementById('saleQty').value, 10) || 1);
+            const price = Math.max(0, parseFloat(document.getElementById('salePrice').value) || 0);
             const date = document.getElementById('saleDate').value || new Date().toISOString().split('T')[0];
             const notes = document.getElementById('saleNotes').value.trim();
-
+    
             const costPerBox = calculateCostPerBox();
             const total = qty * price;
             const costTotal = qty * costPerBox;
             const profit = total - costTotal;
-
-            const newSale = {
-                qty,
-                price,
-                total,
-                costPerBox,
-                profit,
-                date,
-                notes,
-                timestamp: Date.now()
-            };
-
+            const item = { qty, price, total, costPerBox, profit, date, notes, timestamp: Date.now() };
+            const localItem = { id: localId('sale'), ...item };
+    
+            window.appState.sales.push(localItem);
+            persistLocalState();
+            renderSales();
+            updateCalculationsAndDashboard();
+    
             try {
-                const docRef = await addDoc(getColPath('sales'), newSale);
-                newSale.id = docRef.id;
-                showToast('Sale logged successfully!', 'success');
+                const remoteId = await pushRemote('sales', item);
+                window.appState.sales = window.appState.sales.filter(x => x.id !== localItem.id);
+                window.appState.sales.push({ id: remoteId, ...item });
+                persistLocalState();
+                renderSales();
+                showToast('Sale logged and saved to Firebase!', 'success');
             } catch (err) {
-                newSale.id = 'sale_' + Date.now();
-                window.appState.sales.push(newSale);
-                showToast('Sale logged (Local)!', 'success');
+                showToast(`Sale saved on this device. ${firebaseError(err)}`, 'info');
             }
-
+    
             document.getElementById('saleNotes').value = '';
-            renderSales();
-            updateCalculationsAndDashboard();
         };
-
+    
         window.handleDeleteSale = async function(id) {
-            try {
-                await deleteDoc(getDocPath('sales', id));
-            } catch (err) {
-                window.appState.sales = window.appState.sales.filter(s => s.id !== id);
-            }
-            showToast('Sale entry removed.', 'info');
+            window.appState.sales = window.appState.sales.filter(s => s.id !== id);
+            persistLocalState();
             renderSales();
             updateCalculationsAndDashboard();
+    
+            if (String(id).startsWith('local_')) {
+                showToast('Sale entry removed.', 'info');
+                return;
+            }
+    
+            try {
+                await removeRemote(`sales/${id}`);
+                showToast('Sale entry removed.', 'info');
+            } catch (err) {
+                showToast(`Removed locally, but Firebase delete failed: ${firebaseError(err)}`, 'error');
+            }
         };
-
+    
         function renderSales() {
             const listEl = document.getElementById('salesList');
-            const badgeEl = document.getElementById('salesCountBadge');
             if (!listEl) return;
-
-            badgeEl.innerText = `${window.appState.sales.length} Sales`;
-
-            if (window.appState.sales.length === 0) {
+            const badge = document.getElementById('salesCountBadge');
+            if (badge) badge.innerText = `${window.appState.sales.length} Sales`;
+    
+            if (!window.appState.sales.length) {
                 listEl.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No sales recorded yet.</div>`;
                 return;
             }
-
-            // Sort by date desc
-            const sortedSales = [...window.appState.sales].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            listEl.innerHTML = sortedSales.map(s => {
-                return `
-                    <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
-                        <div>
-                            <div class="font-bold text-choco-900">${s.qty} Box(es) @ RM${parseFloat(s.price).toFixed(2)}</div>
-                            <div class="text-[10px] text-slate-500">${s.date} ${s.notes ? '&bull; ' + s.notes : ''}</div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <div class="text-right">
-                                <div class="font-extrabold text-amber-700">RM ${parseFloat(s.total).toFixed(2)}</div>
-                                <div class="text-[10px] font-bold text-emerald-600">+RM ${parseFloat(s.profit).toFixed(2)} profit</div>
-                            </div>
-                            <button onclick="handleDeleteSale('${s.id}')" class="text-slate-300 hover:text-rose-600 transition">
-                                <i class="fa-solid fa-trash-can text-sm"></i>
-                            </button>
-                        </div>
+    
+            const sorted = [...window.appState.sales].sort((a, b) => new Date(b.date) - new Date(a.date));
+            listEl.innerHTML = sorted.map(s => `
+                <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
+                    <div>
+                        <div class="font-bold text-choco-900">${Number(s.qty || 0)} Box(es) @ RM${Number(s.price || 0).toFixed(2)}</div>
+                        <div class="text-[10px] text-slate-500">${escapeHtml(s.date || '')} ${s.notes ? '&bull; ' + escapeHtml(s.notes) : ''}</div>
                     </div>
-                `;
-            }).join('');
+                    <div class="flex items-center gap-3">
+                        <div class="text-right">
+                            <div class="font-extrabold text-amber-700">RM ${Number(s.total || 0).toFixed(2)}</div>
+                            <div class="text-[10px] font-bold text-emerald-600">+RM ${Number(s.profit || 0).toFixed(2)} profit</div>
+                        </div>
+                        <button onclick="handleDeleteSale('${escapeHtml(s.id)}')" class="text-slate-300 hover:text-rose-600 transition">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+                </div>`).join('');
         }
-
+    
         function updateCalculationsAndDashboard() {
             const costPerBox = calculateCostPerBox();
-            
-            // Dashboard values
             let totalRevenue = 0;
             let totalCost = 0;
             let totalProfit = 0;
             let totalBoxesSold = 0;
-
+    
             window.appState.sales.forEach(s => {
-                const qty = s.qty || 1;
-                const rev = s.total || (qty * (s.price || 0));
-                const cst = qty * (s.costPerBox || costPerBox);
-                const prf = rev - cst;
-
+                const qty = Number(s.qty) || 1;
+                const rev = Number(s.total ?? (qty * (Number(s.price) || 0)));
+                const cst = qty * Number(s.costPerBox ?? costPerBox);
                 totalRevenue += rev;
                 totalCost += cst;
-                totalProfit += prf;
+                totalProfit += rev - cst;
                 totalBoxesSold += qty;
             });
-
-            const marginPct = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(0) : 0;
-
-            // Update UI elements
-            document.getElementById('dashProfit').innerText = `RM ${totalProfit.toFixed(2)}`;
-            document.getElementById('dashRevenue').innerText = `RM ${totalRevenue.toFixed(2)}`;
-            document.getElementById('dashCost').innerText = `RM ${totalCost.toFixed(2)}`;
-
-            document.getElementById('dashMargin').innerText = `${marginPct}% margin`;
-            document.getElementById('dashTotalBoxes').innerText = `${totalBoxesSold} boxes sold`;
-            document.getElementById('dashCostPerBox').innerText = `RM ${costPerBox.toFixed(2)}/box`;
-
-            document.getElementById('calcCostPerBox').innerText = `RM ${costPerBox.toFixed(2)}`;
-            document.getElementById('batchCostYieldText').innerText = `RM ${costPerBox.toFixed(2)} / Box`;
-
-            if (window.appState.activeTab === 'dashboard') {
-                renderProfitChart();
-            }
+    
+            const marginPct = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(0) : '0';
+            const set = (id, value) => { const el = document.getElementById(id); if (el) el.innerText = value; };
+            set('dashProfit', `RM ${totalProfit.toFixed(2)}`);
+            set('dashRevenue', `RM ${totalRevenue.toFixed(2)}`);
+            set('dashCost', `RM ${totalCost.toFixed(2)}`);
+            set('dashMargin', `${marginPct}% margin`);
+            set('dashTotalBoxes', `${totalBoxesSold} boxes sold`);
+            set('dashCostPerBox', `RM ${costPerBox.toFixed(2)}/box`);
+            set('calcCostPerBox', `RM ${costPerBox.toFixed(2)}`);
+            set('batchCostYieldText', `RM ${costPerBox.toFixed(2)} / Box`);
+    
+            if (window.appState.activeTab === 'dashboard') renderProfitChart();
         }
-
+    
         function renderProfitChart() {
             const ctx = document.getElementById('profitChart');
-            if (!ctx) return;
-
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
-
-            // Group sales by date
+            if (!ctx || typeof Chart === 'undefined') return;
+            if (chartInstance) chartInstance.destroy();
+    
             const dateMap = {};
-            const sortedSales = [...window.appState.sales].sort((a, b) => new Date(a.date) - new Date(b.date));
-
-            sortedSales.forEach(s => {
-                const d = s.date || 'Today';
-                dateMap[d] = (dateMap[d] || 0) + parseFloat(s.profit || 0);
-            });
-
-            const labels = Object.keys(dateMap).length > 0 ? Object.keys(dateMap) : ['No Data'];
-            const dataValues = Object.keys(dateMap).length > 0 ? Object.values(dateMap) : [0];
-
+            [...window.appState.sales]
+                .sort((a, b) => new Date(a.date) - new Date(b.date))
+                .forEach(s => {
+                    const d = s.date || 'Today';
+                    dateMap[d] = (dateMap[d] || 0) + Number(s.profit || 0);
+                });
+    
+            const labels = Object.keys(dateMap).length ? Object.keys(dateMap) : ['No Data'];
+            const dataValues = Object.keys(dateMap).length ? Object.values(dateMap) : [0];
+    
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
                         label: 'Profit (RM)',
                         data: dataValues,
@@ -1034,310 +1155,303 @@
                         backgroundColor: 'rgba(5, 150, 105, 0.1)',
                         fill: true,
                         tension: 0.3,
-                        pointBackgroundColor: '#059669',
                         pointRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        x: {
-                            ticks: { font: { size: 10 } },
-                            grid: { display: false }
-                        },
-                        y: {
-                            ticks: { font: { size: 10 } },
-                            grid: { color: '#f0e4dc' }
-                        }
+                        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { font: { size: 10 } }, grid: { color: '#f0e4dc' } }
                     }
                 }
             });
         }
-
+    
         window.selectStarRating = function(rating) {
-            window.appState.starRating = rating;
-            const stars = document.querySelectorAll('#starSelector i');
-            stars.forEach((star, index) => {
-                if (index < rating) {
-                    star.className = 'fa-solid fa-star text-amber-400';
-                } else {
-                    star.className = 'fa-regular fa-star text-amber-300';
-                }
+            window.appState.starRating = Math.max(1, Math.min(5, Number(rating) || 5));
+            document.querySelectorAll('#starSelector i').forEach((star, index) => {
+                star.className = index < window.appState.starRating
+                    ? 'fa-solid fa-star text-amber-400'
+                    : 'fa-regular fa-star text-amber-300';
             });
         };
-
-        window.handlePhotoUpload = function(event) {
-            const file = event.target.files[0];
+    
+        window.handlePhotoUpload = async function(event) {
+            const file = event.target.files?.[0];
             if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Client side HTML5 Canvas compression
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const maxDim = 600;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > maxDim) {
-                            height *= maxDim / width;
-                            width = maxDim;
-                        }
-                    } else {
-                        if (height > maxDim) {
-                            width *= maxDim / height;
-                            height = maxDim;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-                    window.appState.reviewPhotoBase64 = compressedBase64;
-
-                    document.getElementById('photoPreviewImg').src = compressedBase64;
-                    document.getElementById('photoPreviewContainer').classList.remove('hidden');
-                };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+            try {
+                const dataUrl = await fileToCompressedDataUrl(file, 700, 0.72);
+                window.appState.reviewPhotoBase64 = dataUrl;
+                const preview = document.getElementById('photoPreviewImg');
+                if (preview) preview.src = dataUrl;
+                const wrap = document.getElementById('photoPreviewContainer');
+                if (wrap) wrap.classList.remove('hidden');
+                showToast('Photo loaded. Press Submit Feedback to save it.', 'success');
+            } catch (err) {
+                event.target.value = '';
+                showToast(err.message || 'Unable to load photo.', 'error');
+            }
         };
-
+    
         window.clearPhotoUpload = function() {
             window.appState.reviewPhotoBase64 = null;
-            document.getElementById('revPhotoInput').value = '';
-            document.getElementById('photoPreviewContainer').classList.add('hidden');
+            const input = document.getElementById('revPhotoInput');
+            if (input) input.value = '';
+            const img = document.getElementById('photoPreviewImg');
+            if (img) img.src = '';
+            const wrap = document.getElementById('photoPreviewContainer');
+            if (wrap) wrap.classList.add('hidden');
         };
-
+    
         window.handleSubmitReview = async function() {
             const name = document.getElementById('revName').value.trim() || 'Happy Customer';
             const comment = document.getElementById('revComment').value.trim();
-
             if (!comment) {
                 showToast('Please leave a short feedback comment!', 'error');
                 return;
             }
-
-            const newReview = {
+    
+            let photo = window.appState.reviewPhotoBase64 || null;
+            // Prevent an extremely large RTDB write. The selected image is normally already compressed.
+            if (photo && photo.length > 900000) {
+                try {
+                    photo = await dataUrlFromExisting(photo, 550, 0.62);
+                } catch (_) {
+                    photo = null;
+                }
+            }
+    
+            const item = {
                 name,
                 rating: window.appState.starRating,
                 comment,
-                photo: window.appState.reviewPhotoBase64,
+                photo,
                 timestamp: Date.now()
             };
-
+            const localItem = { id: localId('review'), ...item };
+    
+            window.appState.reviews.unshift(localItem);
+            persistLocalState();
+            renderReviews();
+    
             try {
-                const docRef = await addDoc(getColPath('reviews'), newReview);
-                newReview.id = docRef.id;
-                showToast('Thank you for your feedback!', 'success');
+                const remoteId = await pushRemote('reviews', item);
+                window.appState.reviews = window.appState.reviews.filter(x => x.id !== localItem.id);
+                window.appState.reviews.unshift({ id: remoteId, ...item });
+                persistLocalState();
+                renderReviews();
+                showToast('Thank you! Review saved to Firebase!', 'success');
             } catch (err) {
-                newReview.id = 'rev_' + Date.now();
-                window.appState.reviews.unshift(newReview);
-                showToast('Thank you for your feedback (Local)!', 'success');
+                showToast(`Review saved on this device. ${firebaseError(err)}`, 'info');
             }
-
-            // Reset form
+    
             document.getElementById('revName').value = '';
             document.getElementById('revComment').value = '';
             clearPhotoUpload();
             selectStarRating(5);
-
-            renderReviews();
         };
-
-        window.handleDeleteReview = async function(id) {
-            try {
-                await deleteDoc(getDocPath('reviews', id));
-            } catch (err) {
-                window.appState.reviews = window.appState.reviews.filter(r => r.id !== id);
-            }
-            showToast('Review deleted by Admin.', 'info');
-            renderReviews();
-        };
-
-        function renderReviews() {
-            const listEl = document.getElementById('reviewsList');
-            const badgeEl = document.getElementById('reviewCountBadge');
-            if (!listEl) return;
-
-            badgeEl.innerText = `${window.appState.reviews.length} Reviews`;
-
-            if (window.appState.reviews.length === 0) {
-                listEl.innerHTML = `<div class="p-6 text-center text-slate-400 bg-white rounded-2xl border border-choco-100 italic text-xs">No feedback submitted yet. Be the first!</div>`;
-                return;
-            }
-
-            listEl.innerHTML = window.appState.reviews.map(rev => {
-                const starHtml = Array.from({ length: 5 }, (_, i) => 
-                    `<i class="fa-solid fa-star ${i < rev.rating ? 'text-amber-400' : 'text-slate-200'}"></i>`
-                ).join('');
-
-                const dateStr = rev.timestamp ? new Date(rev.timestamp).toLocaleDateString() : 'Recently';
-
-                return `
-                    <div class="bg-white border border-choco-100 p-4 rounded-2xl card-shadow space-y-2 relative">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="font-bold text-choco-900 text-xs">${rev.name}</div>
-                                <div class="flex gap-1 text-xs mt-0.5">${starHtml}</div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] text-slate-400">${dateStr}</span>
-                                ${window.appState.isAdmin ? `
-                                    <button onclick="handleDeleteReview('${rev.id}')" title="Admin Delete" class="text-rose-400 hover:text-rose-600 p-1 transition">
-                                        <i class="fa-solid fa-trash-can text-sm"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                        </div>
-
-                        <p class="text-xs text-slate-700 leading-relaxed">${rev.comment}</p>
-
-                        ${rev.photo ? `
-                            <div class="mt-2">
-                                <img src="${rev.photo}" onclick="openLightbox('${rev.photo}')" 
-                                    class="w-20 h-20 object-cover rounded-xl border border-choco-100 shadow-sm cursor-pointer hover:opacity-90 transition">
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-
-        window.openLightbox = function(imgSrc) {
-            document.getElementById('lightboxImg').src = imgSrc;
-            document.getElementById('lightboxModal').classList.remove('hidden');
-        };
-
-        window.closeLightbox = function() {
-            document.getElementById('lightboxModal').classList.add('hidden');
-        };
-
-        window.copyAccountNumber = function() {
-            const accNum = document.getElementById('payAccNum').innerText;
-            navigator.clipboard.writeText(accNum).then(() => {
-                showToast('Account number copied to clipboard!', 'success');
-            }).catch(() => {
-                // Fallback execCommand
-                const el = document.createElement('textarea');
-                el.value = accNum;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                showToast('Account number copied!', 'success');
-            });
-        };
-
-        window.handleQrUpload = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
+    
+        async function dataUrlFromExisting(dataUrl, maxDim, quality) {
+            return new Promise((resolve, reject) => {
                 const img = new Image();
-                img.onload = function() {
+                img.onerror = () => reject(new Error('Unable to process image.'));
+                img.onload = () => {
+                    let width = img.naturalWidth || img.width;
+                    let height = img.naturalHeight || img.height;
+                    const scale = Math.min(1, maxDim / Math.max(width, height));
+                    width = Math.max(1, Math.round(width * scale));
+                    height = Math.max(1, Math.round(height * scale));
                     const canvas = document.createElement('canvas');
-                    const maxDim = 500;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > maxDim || height > maxDim) {
-                        if (width > height) {
-                            height *= maxDim / width;
-                            width = maxDim;
-                        } else {
-                            width *= maxDim / height;
-                            height = maxDim;
-                        }
-                    }
-
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-
-                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
-                    window.appState.qrPhotoBase64 = compressedBase64;
-
-                    document.getElementById('setQrPreviewImg').src = compressedBase64;
-                    document.getElementById('qrPreviewWrapper').classList.remove('hidden');
+                    resolve(canvas.toDataURL('image/jpeg', quality));
                 };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                img.src = dataUrl;
+            });
+        }
+    
+        window.handleDeleteReview = async function(id) {
+            window.appState.reviews = window.appState.reviews.filter(r => r.id !== id);
+            persistLocalState();
+            renderReviews();
+    
+            if (String(id).startsWith('local_')) {
+                showToast('Review deleted.', 'info');
+                return;
+            }
+    
+            try {
+                await removeRemote(`reviews/${id}`);
+                showToast('Review deleted by Admin.', 'info');
+            } catch (err) {
+                showToast(`Deleted locally, but Firebase delete failed: ${firebaseError(err)}`, 'error');
+            }
         };
-
+    
+        function renderReviews() {
+            const listEl = document.getElementById('reviewsList');
+            const badgeEl = document.getElementById('reviewCountBadge');
+            if (!listEl) return;
+            if (badgeEl) badgeEl.innerText = `${window.appState.reviews.length} Reviews`;
+    
+            if (!window.appState.reviews.length) {
+                listEl.innerHTML = `<div class="p-6 text-center text-slate-400 bg-white rounded-2xl border border-choco-100 italic text-xs">No feedback submitted yet. Be the first!</div>`;
+                return;
+            }
+    
+            listEl.innerHTML = window.appState.reviews.map(rev => {
+                const rating = Math.max(1, Math.min(5, Number(rev.rating) || 5));
+                const stars = Array.from({ length: 5 }, (_, i) =>
+                    `<i class="fa-solid fa-star ${i < rating ? 'text-amber-400' : 'text-slate-200'}"></i>`
+                ).join('');
+                const dateStr = rev.timestamp ? new Date(Number(rev.timestamp)).toLocaleDateString() : 'Recently';
+                const photoHtml = rev.photo
+                    ? `<div class="mt-2"><img src="${escapeHtml(rev.photo)}" onclick="openLightbox(this.src)" class="w-20 h-20 object-cover rounded-xl border border-choco-100 shadow-sm cursor-pointer hover:opacity-90 transition"></div>`
+                    : '';
+    
+                return `
+                    <div class="bg-white border border-choco-100 p-4 rounded-2xl card-shadow space-y-2 relative">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-bold text-choco-900 text-xs">${escapeHtml(rev.name || 'Happy Customer')}</div>
+                                <div class="flex gap-1 text-xs mt-0.5">${stars}</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-400">${escapeHtml(dateStr)}</span>
+                                ${window.appState.isAdmin ? `
+                                    <button onclick="handleDeleteReview('${escapeHtml(rev.id)}')" class="text-rose-400 hover:text-rose-600 p-1 transition">
+                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                    </button>` : ''}
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-700 leading-relaxed">${escapeHtml(rev.comment || '')}</p>
+                        ${photoHtml}
+                    </div>`;
+            }).join('');
+        }
+    
+        window.openLightbox = function(imgSrc) {
+            const modal = document.getElementById('lightboxModal');
+            const img = document.getElementById('lightboxImg');
+            if (img) img.src = imgSrc;
+            if (modal) modal.classList.remove('hidden');
+        };
+    
+        window.closeLightbox = function() {
+            document.getElementById('lightboxModal')?.classList.add('hidden');
+        };
+    
+        window.copyAccountNumber = function() {
+            const accNum = document.getElementById('payAccNum')?.innerText || '';
+            if (navigator.clipboard?.writeText) {
+                navigator.clipboard.writeText(accNum).then(() => showToast('Account number copied!', 'success'))
+                    .catch(() => fallbackCopy(accNum));
+            } else {
+                fallbackCopy(accNum);
+            }
+        };
+    
+        function fallbackCopy(text) {
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            try { document.execCommand('copy'); } catch (_) {}
+            el.remove();
+            showToast('Account number copied!', 'success');
+        }
+    
+        window.handleQrUpload = async function(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            try {
+                const dataUrl = await fileToCompressedDataUrl(file, 900, 0.84);
+                window.appState.qrPhotoBase64 = dataUrl;
+                const preview = document.getElementById('setQrPreviewImg');
+                if (preview) preview.src = dataUrl;
+                const wrap = document.getElementById('qrPreviewWrapper');
+                if (wrap) wrap.classList.remove('hidden');
+                showToast('QR image loaded. Press Save QR Settings.', 'success');
+            } catch (err) {
+                event.target.value = '';
+                showToast(err.message || 'Unable to load QR image.', 'error');
+            }
+        };
+    
         window.handleSaveQrSettings = async function() {
             const bankName = document.getElementById('setBankName').value.trim() || 'Maybank';
             const accHolder = document.getElementById('setAccHolder').value.trim() || 'KekBatikLab';
             const accNum = document.getElementById('setAccNum').value.trim() || '5648 1234 9901';
             const qrUrl = window.appState.qrPhotoBase64 || window.appState.settings.qrUrl;
-
-            const newSettings = {
-                bankName,
-                accHolder,
-                accNum,
-                qrUrl
-            };
-
-            try {
-                await setDoc(getDocPath('settings', 'qr_config'), newSettings);
-                showToast('QR & Payment Settings updated!', 'success');
-            } catch (err) {
-                window.appState.settings = newSettings;
-                showToast('Settings saved (Local)!', 'success');
-            }
-
+            const newSettings = { bankName, accHolder, accNum, qrUrl };
+    
+            // Save locally first so the button NEVER loses the user's work.
+            window.appState.settings = newSettings;
+            persistLocalState();
             renderSettingsAndPayment();
+    
+            try {
+                await saveRemote('settings/qr_config', newSettings);
+                showToast('QR & Payment Settings saved to Firebase!', 'success');
+            } catch (err) {
+                showToast(`Settings saved on this device. ${firebaseError(err)}`, 'info');
+            }
+    
+            window.appState.qrPhotoBase64 = null;
+            const fileInput = document.getElementById('qrFileInput');
+            if (fileInput) fileInput.value = '';
+            persistLocalState();
         };
-
+    
         function renderSettingsAndPayment() {
-            const s = window.appState.settings;
-
-            // Payment View Elements
-            document.getElementById('payBankName').innerText = s.bankName || 'Maybank';
-            document.getElementById('payAccHolder').innerText = s.accHolder || 'KekBatikLab';
-            document.getElementById('payAccNum').innerText = s.accNum || '5648 1234 9901';
-            if (s.qrUrl) document.getElementById('payQrImg').src = s.qrUrl;
-
-            // Settings Inputs
-            document.getElementById('setBankName').value = s.bankName || '';
-            document.getElementById('setAccHolder').value = s.accHolder || '';
-            document.getElementById('setAccNum').value = s.accNum || '';
+            const s = window.appState.settings || {};
+            const set = (id, value) => { const el = document.getElementById(id); if (el) el.innerText = value; };
+            const val = (id, value) => { const el = document.getElementById(id); if (el) el.value = value; };
+    
+            set('payBankName', s.bankName || 'Maybank');
+            set('payAccHolder', s.accHolder || 'KekBatikLab');
+            set('payAccNum', s.accNum || '5648 1234 9901');
+    
+            const qr = document.getElementById('payQrImg');
+            if (qr && s.qrUrl) qr.src = s.qrUrl;
+    
+            val('setBankName', s.bankName || '');
+            val('setAccHolder', s.accHolder || '');
+            val('setAccNum', s.accNum || '');
+    
+            if (s.qrUrl && String(s.qrUrl).startsWith('data:image/')) {
+                const img = document.getElementById('setQrPreviewImg');
+                const wrap = document.getElementById('qrPreviewWrapper');
+                if (img) img.src = s.qrUrl;
+                if (wrap) wrap.classList.remove('hidden');
+            }
         }
-
+    
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
             if (!container) return;
-
-            const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : 
-                           type === 'error' ? 'bg-rose-600 text-white' : 'bg-choco-800 text-amber-100';
-
+    
+            const bgClass = type === 'success'
+                ? 'bg-emerald-600 text-white'
+                : type === 'error'
+                    ? 'bg-rose-600 text-white'
+                    : 'bg-choco-800 text-amber-100';
+    
             const toast = document.createElement('div');
             toast.className = `${bgClass} text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 mb-2 transition transform translate-y-0 opacity-100`;
-            toast.innerHTML = `
-                <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info'}"></i>
-                <span>${message}</span>
-            `;
-
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info'}"></i><span>${escapeHtml(message)}</span>`;
             container.appendChild(toast);
-
             setTimeout(() => {
                 toast.classList.add('opacity-0', '-translate-y-2');
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, 3500);
         }
-
+    
         function renderAllViews() {
             renderIngredients();
             renderSales();
@@ -1345,9 +1459,8 @@
             renderSettingsAndPayment();
             updateCalculationsAndDashboard();
         }
-
-        // Initialize on DOM load
+    
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
-</body>
+    </body>
 </html>
