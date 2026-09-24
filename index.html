@@ -1,1289 +1,1353 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BAKED WITH LOVE: Kek Batik Sale Tracker</title>
-  
-  <!-- Google Fonts: Inter & Outfit -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            choco: {
-              50: '#FDF8F5',
-              100: '#F7EBE2',
-              200: '#EBD2C2',
-              300: '#D9B299',
-              400: '#C28B6B',
-              500: '#A46743',
-              600: '#8A4F2E',
-              700: '#6B3C21',
-              800: '#4D2A16',
-              900: '#331B0E',
-            },
-            cream: {
-              50: '#FFFEFC',
-              100: '#FAF5EF',
-              200: '#F3E9DD',
-              300: '#E7D8C5',
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KekBatikLab</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        choco: {
+                            50: '#fdf8f6',
+                            100: '#f8efeb',
+                            200: '#eee0d8',
+                            300: '#dfc4b5',
+                            400: '#c59a82',
+                            500: '#a7765b',
+                            600: '#8c5a38',
+                            700: '#6b4226', /* Primary Chocolate */
+                            800: '#54331d',
+                            900: '#4a2f1d', /* Dark Chocolate */
+                            950: '#28170c',
+                        },
+                        cream: '#fdf8f6',
+                        cardBg: '#ffffff',
+                    },
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'serif'],
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    }
+                }
             }
-          },
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            display: ['Outfit', 'sans-serif'],
-          }
         }
-      }
-    }
-  </script>
+    </script>
 
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #28170c;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-  <!-- Firebase Compat Libraries -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fdf8f6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #dfc4b5;
+            border-radius: 4px;
+        }
 
-  <style>
-    body {
-      background-color: #2D180C;
-      font-family: 'Inter', sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .font-display {
-      font-family: 'Outfit', sans-serif;
-    }
-    /* Custom Scrollbar for sleek mobile view */
-    ::-webkit-scrollbar {
-      width: 4px;
-      height: 4px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(0,0,0,0.05);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #A46743;
-      border-radius: 4px;
-    }
-    .glass-card {
-      background: rgba(255, 255, 255, 0.92);
-      backdrop-filter: blur(8px);
-    }
-    .animate-fadeIn {
-      animation: fadeIn 0.25s ease-out forwards;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+        .glass-header {
+            background: rgba(107, 66, 38, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .bottom-nav {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid #eee0d8;
+        }
+
+        .active-tab {
+            color: #6b4226;
+            font-weight: 700;
+        }
+
+        .active-tab::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 20%;
+            width: 60%;
+            height: 3px;
+            background-color: #6b4226;
+            border-radius: 9999px;
+        }
+
+        .card-shadow {
+            box-shadow: 0 4px 20px -2px rgba(74, 47, 29, 0.08), 0 2px 6px -1px rgba(74, 47, 29, 0.04);
+        }
+    </style>
 </head>
-<body class="min-h-screen flex justify-center items-center p-0 sm:p-4 text-stone-800">
 
-  <!-- Main Mobile App Shell -->
-  <div id="appShell" class="w-full sm:max-w-md bg-cream-100 min-h-screen sm:min-h-[850px] sm:max-h-[90vh] sm:rounded-3xl shadow-2xl relative flex flex-col overflow-hidden border-0 sm:border-4 border-choco-800">
+<body class="flex justify-center items-center min-h-screen text-slate-800">
 
-    <!-- Toast Notification Container -->
-    <div id="toastContainer" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-xs transition-all duration-300 pointer-events-none opacity-0 transform -translate-y-4">
-      <div id="toastContent" class="bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm font-medium">
-        <i id="toastIcon" class="fa-solid fa-circle-info text-amber-400 text-lg"></i>
-        <span id="toastMessage">Notification message</span>
-      </div>
-    </div>
+    <!-- Mobile Container -->
+    <div class="w-full max-w-md bg-cream min-h-screen relative flex flex-col shadow-2xl overflow-x-hidden pb-24">
 
-    <!-- Top Admin Status Bar (When Logged In) -->
-    <div id="adminStatusBar" class="hidden bg-emerald-700 text-white px-4 py-2 text-xs font-semibold flex justify-between items-center z-20 shadow-inner">
-      <span class="flex items-center gap-1.5">
-        <span class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-        <i class="fa-solid fa-user-shield"></i> Admin Mode Active
-      </span>
-      <button onclick="handleLogout()" class="bg-emerald-900 hover:bg-emerald-800 px-2.5 py-1 rounded-lg text-white font-medium transition flex items-center gap-1">
-        <i class="fa-solid fa-right-from-bracket text-xs"></i> Logout
-      </button>
-    </div>
-
-    <!-- App Header -->
-    <header class="bg-gradient-to-r from-choco-900 via-choco-800 to-choco-900 text-white p-4 pt-5 pb-4 shadow-lg relative z-10">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-choco-500 flex items-center justify-center text-choco-900 shadow-md text-xl font-black">
-            <i class="fa-solid fa-cake-candles"></i>
-          </div>
-          <div>
-            <h1 class="font-display font-bold text-lg tracking-wide text-amber-100 leading-tight">BAKED WITH LOVE</h1>
-            <p class="text-xs text-choco-200 font-medium tracking-wide">Kek Batik Sales & Calculator</p>
-          </div>
-        </div>
-
-        <!-- Right Header Action Button -->
-        <div id="headerAuthBtn">
-          <button onclick="openLoginModal()" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-400/30 text-xs px-3 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5">
-            <i class="fa-solid fa-lock text-amber-400"></i> Admin Login
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- Scrollable Main View Area -->
-    <main class="flex-1 overflow-y-auto p-4 space-y-4 pb-24" id="mainContent">
-
-      <!-- ==================== VIEW 1: CUSTOMER PAYMENT & QR ==================== -->
-      <section id="view_customer_qr" class="app-view animate-fadeIn space-y-4">
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-cream-200 text-center space-y-3">
-          <div class="inline-flex items-center gap-2 bg-choco-50 text-choco-700 px-3 py-1 rounded-full text-xs font-semibold">
-            <i class="fa-solid fa-qrcode"></i> Instant Payment QR
-          </div>
-          <h2 class="font-display text-xl font-bold text-choco-900">Scan to Pay via QR</h2>
-          <p class="text-xs text-stone-500 max-w-xs mx-auto">Scan using DuitNow, Touch 'n Go eWallet, Maybank, or any major Malaysian banking app.</p>
-
-          <!-- QR Container -->
-          <div class="relative w-56 h-56 mx-auto bg-stone-50 border-2 border-dashed border-choco-200 rounded-2xl p-3 flex flex-col justify-center items-center shadow-inner my-2">
-            <img id="qrDisplayImg" src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DuitNow-KekBatik-BakedWithLove" alt="Payment QR Code" class="w-full h-full object-contain rounded-lg">
-          </div>
-
-          <!-- Account Details -->
-          <div class="bg-cream-100 rounded-2xl p-3 text-left space-y-2 border border-cream-300">
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-stone-500">Bank / Provider:</span>
-              <span id="displayBankName" class="font-bold text-choco-900">Maybank / DuitNow</span>
+        <!-- Header Bar -->
+        <header class="sticky top-0 z-30 glass-header text-white px-5 py-4 flex justify-between items-center shadow-md">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-cream/15 border border-amber-200/30 flex items-center justify-center text-amber-200 shadow-inner">
+                    <i class="fa-solid fa-cookie-bite text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-serif font-bold text-lg leading-tight tracking-wide text-amber-100">KekBatikLab</h1>
+                    <p class="text-xs text-amber-200/80 font-medium tracking-wider uppercase">By F4REAST</p>
+                </div>
             </div>
-            <div class="flex justify-between items-center text-xs">
-              <span class="text-stone-500">Account Holder:</span>
-              <span id="displayAccountName" class="font-semibold text-stone-800">Baked With Love Enterprise</span>
-            </div>
-            <div class="flex justify-between items-center text-xs pt-1 border-t border-cream-300">
-              <span class="text-stone-500">Account No:</span>
-              <div class="flex items-center gap-2">
-                <span id="displayAccountNum" class="font-mono font-bold text-choco-800">5140 1234 5678</span>
-                <button onclick="copyAccountNumber()" class="text-amber-600 hover:text-amber-700 text-xs px-2 py-0.5 bg-amber-100 rounded font-semibold transition">
-                  <i class="fa-regular fa-copy"></i> Copy
+
+            <div id="authHeaderBtn">
+                <button onclick="openLoginModal()" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border border-amber-300/30 px-3 py-1.5 rounded-full font-semibold transition flex items-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-lock text-[10px]"></i> Admin
                 </button>
-              </div>
             </div>
-          </div>
-          <p id="displayNotes" class="text-[11px] text-stone-400 italic">Please include your name in payment reference upon transfer.</p>
-        </div>
+        </header>
 
-        <div class="bg-gradient-to-r from-amber-500 to-choco-600 text-white rounded-2xl p-4 shadow-md flex items-center justify-between">
-          <div>
-            <h3 class="font-display font-bold text-base">Loved Our Kek Batik?</h3>
-            <p class="text-xs text-amber-100">Leave us a review to help us bake better!</p>
-          </div>
-          <button onclick="switchTab('customer_feedback')" class="bg-white text-choco-800 px-3.5 py-2 rounded-xl font-bold text-xs shadow hover:bg-amber-50 transition">
-            Write Review <i class="fa-solid fa-arrow-right ml-1"></i>
-          </button>
-        </div>
-      </section>
+        <!-- Main Scrollable Content Area -->
+        <main class="flex-1 px-4 py-5 space-y-5">
 
-      <!-- ==================== VIEW 2: CUSTOMER FEEDBACK & REVIEWS ==================== -->
-      <section id="view_customer_feedback" class="app-view hidden animate-fadeIn space-y-4">
-        <!-- Leave Feedback Card -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-cream-200 space-y-4">
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center font-bold text-sm">
-              <i class="fa-solid fa-comment-dots"></i>
+            <!-- ================= DASHBOARD TAB (Admin Only) ================= -->
+            <section id="tab-dashboard" class="tab-content hidden space-y-5">
+                <!-- Summary Metric Cards -->
+                <div class="grid grid-cols-3 gap-2.5">
+                    <!-- Total Profit -->
+                    <div class="bg-emerald-50 border border-emerald-200/80 p-3 rounded-2xl text-center card-shadow relative overflow-hidden">
+                        <div class="text-[10px] uppercase font-bold text-emerald-800 tracking-wider">Profit</div>
+                        <div id="dashProfit" class="text-base font-extrabold text-emerald-700 mt-0.5">RM 0.00</div>
+                        <div class="text-[10px] text-emerald-600 font-medium mt-0.5" id="dashMargin">0% margin</div>
+                    </div>
+
+                    <!-- Total Revenue -->
+                    <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-2xl text-center card-shadow">
+                        <div class="text-[10px] uppercase font-bold text-amber-800 tracking-wider">Revenue</div>
+                        <div id="dashRevenue" class="text-base font-extrabold text-amber-700 mt-0.5">RM 0.00</div>
+                        <div class="text-[10px] text-amber-600 font-medium mt-0.5" id="dashTotalBoxes">0 boxes</div>
+                    </div>
+
+                    <!-- Total Cost -->
+                    <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-2xl text-center card-shadow">
+                        <div class="text-[10px] uppercase font-bold text-rose-800 tracking-wider">Total Cost</div>
+                        <div id="dashCost" class="text-base font-extrabold text-rose-700 mt-0.5">RM 0.00</div>
+                        <div class="text-[10px] text-rose-600 font-medium mt-0.5" id="dashCostPerBox">RM 0/box</div>
+                    </div>
+                </div>
+
+                <!-- Sales & Profit Analytics Chart -->
+                <div class="bg-white p-4 rounded-2xl border border-choco-100 card-shadow">
+                    <div class="flex justify-between items-center mb-3">
+                        <h2 class="font-serif font-bold text-choco-900 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-chart-line text-choco-600"></i> Profit Trend
+                        </h2>
+                        <span class="text-[10px] bg-choco-100 text-choco-800 font-semibold px-2 py-0.5 rounded-full">Recent Sales</span>
+                    </div>
+                    <div class="h-48 w-full">
+                        <canvas id="profitChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Quick Stats Summary -->
+                <div class="bg-gradient-to-r from-choco-800 to-choco-900 text-amber-100 p-4 rounded-2xl shadow-lg border border-choco-700 flex justify-between items-center">
+                    <div>
+                        <div class="text-xs text-amber-200/80 font-medium">Batch Cost Yield</div>
+                        <div id="batchCostYieldText" class="text-lg font-bold">RM 0.00 / Box</div>
+                        <div class="text-[11px] text-amber-200/60 mt-0.5">Based on calculated ingredients</div>
+                    </div>
+                    <button onclick="switchTab('ingredients')" class="bg-amber-400 hover:bg-amber-300 text-choco-950 px-3 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-calculator"></i> Calc
+                    </button>
+                </div>
+            </section>
+
+
+            <!-- ================= INGREDIENTS TAB (Admin Only) ================= -->
+            <section id="tab-ingredients" class="tab-content hidden space-y-4">
+                <!-- Batch Cost Header Banner -->
+                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow">
+                    <div class="flex justify-between items-start border-b border-choco-100 pb-3 mb-3">
+                        <div>
+                            <h2 class="font-serif font-bold text-choco-900 text-base">Ingredient Cost Calculator</h2>
+                            <p class="text-xs text-slate-500">Calculate exact cost per batch & box</p>
+                        </div>
+                        <div class="bg-choco-700 text-white text-right px-3 py-1.5 rounded-xl">
+                            <div class="text-[9px] uppercase tracking-wider text-amber-200">Cost / Box</div>
+                            <div id="calcCostPerBox" class="text-base font-bold text-amber-100">RM 0.00</div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Yield Input -->
+                    <div class="flex items-center justify-between bg-choco-50/70 p-3 rounded-xl border border-choco-100">
+                        <label class="text-xs font-bold text-choco-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-boxes-stacked text-choco-600"></i> Batch Yield (Boxes):
+                        </label>
+                        <input type="number" id="batchYieldInput" value="10" min="1" oninput="updateBatchYield(this.value)"
+                            class="w-20 bg-white border border-choco-200 rounded-lg px-2.5 py-1 text-center font-bold text-choco-900 text-sm focus:outline-none focus:ring-2 focus:ring-choco-600">
+                    </div>
+                </div>
+
+                <!-- Add Ingredient Form -->
+                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-choco-800 flex items-center gap-1.5">
+                        <i class="fa-solid fa-plus-circle text-choco-600"></i> Add Ingredient
+                    </h3>
+
+                    <div class="space-y-2.5">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Ingredient Name</label>
+                            <input type="text" id="ingName" placeholder="e.g. Butter, Marie Biscuit"
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="text-[10px] font-semibold text-slate-600">Price (RM)</label>
+                                <input type="number" id="ingPrice" placeholder="12.50" step="0.01"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-semibold text-slate-600">Pkg Weight (g)</label>
+                                <input type="number" id="ingPkgGrams" placeholder="250"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-semibold text-slate-600">Used (g)</label>
+                                <input type="number" id="ingUsedGrams" placeholder="200"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                            </div>
+                        </div>
+
+                        <button onclick="handleAddIngredient()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 mt-1">
+                            <i class="fa-solid fa-plus"></i> Add Ingredient
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ingredient List Table -->
+                <div class="bg-white border border-choco-200 rounded-2xl overflow-hidden card-shadow">
+                    <div class="p-3 bg-choco-50/80 border-b border-choco-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-choco-900">Current Ingredients</span>
+                        <span id="totalBatchCostBadge" class="text-xs font-bold text-choco-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">
+                            Total: RM 0.00
+                        </span>
+                    </div>
+
+                    <div id="ingredientList" class="divide-y divide-slate-100 text-xs">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================= SALES LOGGER TAB (Admin Only) ================= -->
+            <section id="tab-sales" class="tab-content hidden space-y-4">
+                <!-- Log Sale Form Card -->
+                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
+                    <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-cash-register text-choco-600"></i> Record New Sale
+                    </h2>
+
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Quantity (Boxes)</label>
+                                <input type="number" id="saleQty" value="1" min="1"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Price / Box (RM)</label>
+                                <input type="number" id="salePrice" value="15.00" step="0.5"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Sale Date</label>
+                            <input type="date" id="saleDate"
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Customer / Notes (Optional)</label>
+                            <input type="text" id="saleNotes" placeholder="e.g. COD Bangi, Special order"
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        </div>
+
+                        <button onclick="handleLogSale()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-check"></i> Record Sale
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sales History List -->
+                <div class="bg-white border border-choco-200 rounded-2xl overflow-hidden card-shadow">
+                    <div class="p-3 bg-choco-50/80 border-b border-choco-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-choco-900">Sales History</span>
+                        <span id="salesCountBadge" class="text-[10px] text-choco-600 bg-white border border-choco-200 px-2 py-0.5 rounded-full font-semibold">0 Entries</span>
+                    </div>
+
+                    <div id="salesList" class="divide-y divide-slate-100 text-xs">
+                        <!-- Dynamic Sales Rows -->
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================= REVIEWS & FEEDBACK TAB (Customer & Admin) ================= -->
+            <section id="tab-reviews" class="tab-content space-y-4">
+
+                <!-- Submit Feedback Card (Available to Everyone) -->
+                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-heart text-rose-500"></i> Leave Feedback
+                        </h2>
+                        <span class="text-[10px] text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full font-bold border border-amber-200">Customer Review</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <!-- Star Rating Selector -->
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Your Rating</label>
+                            <div id="starSelector" class="flex gap-2 text-amber-400 text-2xl cursor-pointer">
+                                <i class="fa-solid fa-star" data-rating="1" onclick="selectStarRating(1)"></i>
+                                <i class="fa-solid fa-star" data-rating="2" onclick="selectStarRating(2)"></i>
+                                <i class="fa-solid fa-star" data-rating="3" onclick="selectStarRating(3)"></i>
+                                <i class="fa-solid fa-star" data-rating="4" onclick="selectStarRating(4)"></i>
+                                <i class="fa-solid fa-star" data-rating="5" onclick="selectStarRating(5)"></i>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Your Name</label>
+                            <input type="text" id="revName" placeholder="e.g. Sarah M."
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Feedback / Comment</label>
+                            <textarea id="revComment" rows="2" placeholder="How delicious was your Kek Batik?"
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50"></textarea>
+                        </div>
+
+                        <!-- Photo Attachment -->
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Attach Photo of Kek Batik (Optional)</label>
+                            <label class="flex items-center justify-center border-2 border-dashed border-choco-200 rounded-xl p-3 cursor-pointer bg-choco-50/40 hover:bg-choco-50 transition">
+                                <input type="file" id="revPhotoInput" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+                                <div class="text-center text-choco-700">
+                                    <i class="fa-solid fa-camera text-lg mb-1"></i>
+                                    <div class="text-xs font-semibold">Choose Photo</div>
+                                </div>
+                            </label>
+                            <div id="photoPreviewContainer" class="hidden mt-2 relative inline-block">
+                                <img id="photoPreviewImg" class="w-20 h-20 object-cover rounded-xl border border-choco-200 shadow-sm">
+                                <button onclick="clearPhotoUpload()" class="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button onclick="handleSubmitReview()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Submit Feedback
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reviews Feed -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-choco-900">Customer Love</h3>
+                        <span id="reviewCountBadge" class="text-[10px] bg-choco-100 text-choco-800 px-2 py-0.5 rounded-full font-bold">0 Reviews</span>
+                    </div>
+
+                    <div id="reviewsList" class="space-y-3">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ================= PAY & QR TAB (Customer & Admin) ================= -->
+            <section id="tab-pay" class="tab-content hidden space-y-4">
+                <div class="bg-white border border-choco-200 p-5 rounded-2xl text-center card-shadow space-y-4">
+                    <div>
+                        <span class="text-[10px] uppercase font-bold tracking-widest text-amber-700 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                            Instant Payment
+                        </span>
+                        <h2 class="font-serif font-bold text-choco-900 text-xl mt-2">DuitNow / Bank QR</h2>
+                        <p class="text-xs text-slate-500 mt-1">Scan or copy details to pay for your Kek Batik</p>
+                    </div>
+
+                    <!-- Display QR Code -->
+                    <div class="relative inline-block border-4 border-choco-700 p-2.5 rounded-2xl bg-white shadow-md my-2">
+                        <img id="payQrImg" src="https://placehold.co/300x300/6b4226/ffffff?text=DuitNow+QR" alt="Payment QR" class="w-52 h-52 object-contain rounded-lg mx-auto">
+                    </div>
+
+                    <!-- Account Info Card -->
+                    <div class="bg-choco-50/70 border border-choco-200 p-3.5 rounded-xl text-left space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-500 font-medium">Bank Name:</span>
+                            <span id="payBankName" class="font-bold text-choco-900">Maybank</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-slate-500 font-medium">Account Name:</span>
+                            <span id="payAccHolder" class="font-bold text-choco-900">KekBatikLab</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs border-t border-choco-100 pt-2">
+                            <span class="text-slate-500 font-medium">Account No:</span>
+                            <span id="payAccNum" class="font-mono font-bold text-choco-900 text-sm">5648 1234 9901</span>
+                        </div>
+                    </div>
+
+                    <!-- Copy Account Button -->
+                    <button onclick="copyAccountNumber()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-copy text-sm"></i> Copy Account Number
+                    </button>
+
+                    <p class="text-[11px] text-slate-400 italic">Thank You and Have A Nice Day .</p>
+                </div>
+            </section>
+
+
+            <!-- ================= QR SETTINGS TAB (Admin Only) ================= -->
+            <section id="tab-qr-settings" class="tab-content hidden space-y-4">
+                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
+                    <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode text-choco-600"></i> Payment QR & Bank Settings
+                    </h2>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Bank Name</label>
+                            <input type="text" id="setBankName" placeholder="e.g. Maybank, CIMB"
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Account Holder Name</label>
+                            <input type="text" id="setAccHolder" placeholder="e.g. KekBatikLab Enterprise"
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        </div>
+
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Account Number</label>
+                            <input type="text" id="setAccNum" placeholder="e.g. 5648 1234 9901"
+                                class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-mono">
+                        </div>
+
+                        <!-- Update QR Image File -->
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600 block mb-1">Update QR Code Image</label>
+                            <label class="flex items-center justify-center border-2 border-dashed border-choco-300 rounded-xl p-4 cursor-pointer bg-choco-50/50 hover:bg-choco-100/50 transition">
+                                <input type="file" id="qrFileInput" accept="image/*" class="hidden" onchange="handleQrUpload(event)">
+                                <div class="text-center text-choco-800">
+                                    <i class="fa-solid fa-upload text-xl mb-1"></i>
+                                    <div class="text-xs font-bold">Upload New QR Code</div>
+                                    <div class="text-[10px] text-slate-400">PNG or JPG file</div>
+                                </div>
+                            </label>
+                            <div id="qrPreviewWrapper" class="mt-2 text-center hidden">
+                                <img id="setQrPreviewImg" class="w-32 h-32 object-contain mx-auto border border-choco-200 rounded-xl">
+                            </div>
+                        </div>
+
+                        <button onclick="handleSaveQrSettings()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Save QR Settings
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+
+        <!-- Floating Bottom Navigation -->
+        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bottom-nav px-3 py-2 z-30 shadow-2xl">
+            <div id="navContainer" class="flex justify-around items-center">
+                <!-- Nav buttons rendered dynamically based on role -->
             </div>
-            <div>
-              <h2 class="font-display text-base font-bold text-choco-900">Leave Your Feedback</h2>
-              <p class="text-xs text-stone-500">Rate your Kek Batik experience</p>
-            </div>
-          </div>
+        </nav>
 
-          <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)" class="space-y-3">
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Your Name</label>
-              <input type="text" id="feedbackName" required placeholder="e.g. Nurul Huda" class="w-full text-sm px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50">
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Rating</label>
-              <div class="flex items-center gap-2 text-2xl text-amber-400 py-1" id="starRatingSelector">
-                <i class="fa-solid fa-star cursor-pointer transition hover:scale-110" data-rating="1" onclick="setRating(1)"></i>
-                <i class="fa-solid fa-star cursor-pointer transition hover:scale-110" data-rating="2" onclick="setRating(2)"></i>
-                <i class="fa-solid fa-star cursor-pointer transition hover:scale-110" data-rating="3" onclick="setRating(3)"></i>
-                <i class="fa-solid fa-star cursor-pointer transition hover:scale-110" data-rating="4" onclick="setRating(4)"></i>
-                <i class="fa-solid fa-star cursor-pointer transition hover:scale-110" data-rating="5" onclick="setRating(5)"></i>
-                <span id="ratingScoreText" class="text-xs font-semibold text-stone-500 ml-2">(5 / 5)</span>
-              </div>
-            </div>
-
-            <div>
-              <label class="block text-xs font-semibold text-stone-600 mb-1">Your Review / Comments</label>
-              <textarea id="feedbackComment" required rows="3" placeholder="Tell us how much you loved the chocolate richness, sweetness level, or packaging..." class="w-full text-sm px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50"></textarea>
-            </div>
-
-            <button type="submit" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-3 rounded-xl shadow-md text-sm transition flex items-center justify-center gap-2">
-              <i class="fa-solid fa-paper-plane"></i> Submit Feedback
-            </button>
-          </form>
-        </div>
-
-        <!-- Recent Customer Reviews Feed -->
-        <div class="space-y-3">
-          <div class="flex justify-between items-center px-1">
-            <h3 class="font-display font-bold text-sm text-choco-900 flex items-center gap-1.5">
-              <i class="fa-solid fa-star text-amber-500"></i> Customer Reviews (<span id="feedbackCount">0</span>)
-            </h3>
-            <span id="avgRatingDisplay" class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">★ 5.0 Avg</span>
-          </div>
-
-          <div id="feedbackList" class="space-y-2">
-            <!-- Dynamic reviews inserted here -->
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== VIEW 3: ADMIN DASHBOARD ==================== -->
-      <section id="view_admin_dashboard" class="app-view hidden animate-fadeIn space-y-4">
-        <!-- Hero Financial Summary Card -->
-        <div class="bg-gradient-to-br from-emerald-600 to-emerald-800 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
-          <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl text-white pointer-events-none">
-            <i class="fa-solid fa-chart-line"></i>
-          </div>
-          <p class="text-xs font-medium text-emerald-100 uppercase tracking-wider mb-1">Total Net Profit</p>
-          <div id="dashTotalProfit" class="font-display text-3xl font-extrabold tracking-tight">RM 0.00</div>
-          <div class="mt-3 pt-3 border-t border-emerald-500/40 flex justify-between text-xs text-emerald-100">
-            <span>Overall Sales Profit</span>
-            <span id="dashProfitMargin" class="font-bold text-emerald-200">0% Margin</span>
-          </div>
-        </div>
-
-        <!-- Secondary Metrics Grid -->
-        <div class="grid grid-cols-2 gap-3">
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-cream-200">
-            <div class="flex items-center gap-2 text-amber-600 text-xs font-semibold mb-1">
-              <i class="fa-solid fa-coins"></i> Total Revenue
-            </div>
-            <div id="dashTotalRevenue" class="font-display text-xl font-bold text-stone-800">RM 0.00</div>
-            <p class="text-[10px] text-stone-400 mt-1">Gross earnings</p>
-          </div>
-
-          <div class="bg-white p-4 rounded-2xl shadow-sm border border-cream-200">
-            <div class="flex items-center gap-2 text-rose-500 text-xs font-semibold mb-1">
-              <i class="fa-solid fa-receipt"></i> Total Costs
-            </div>
-            <div id="dashTotalCost" class="font-display text-xl font-bold text-stone-800">RM 0.00</div>
-            <p class="text-[10px] text-stone-400 mt-1">Ingredients expense</p>
-          </div>
-        </div>
-
-        <!-- Unit Economics Summary -->
-        <div class="bg-choco-900 text-amber-100 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-          <div>
-            <div class="text-[11px] text-choco-200 uppercase font-semibold">Cost per Box (Recipe)</div>
-            <div id="dashCostPerBox" class="font-display text-lg font-bold text-white">RM 0.00</div>
-          </div>
-          <div class="text-right">
-            <div class="text-[11px] text-choco-200 uppercase font-semibold">Total Boxes Sold</div>
-            <div id="dashTotalBoxes" class="font-display text-lg font-bold text-amber-400">0 Boxes</div>
-          </div>
-        </div>
-
-        <!-- Chart Container -->
-        <div class="bg-white rounded-3xl p-4 shadow-sm border border-cream-200 space-y-2">
-          <h3 class="font-display text-sm font-bold text-choco-900 flex items-center justify-between">
-            <span><i class="fa-solid fa-chart-pie text-choco-600 mr-1.5"></i> Revenue vs Expenses</span>
-          </h3>
-          <div class="relative h-48 w-full flex items-center justify-center">
-            <canvas id="financeChart"></canvas>
-          </div>
-        </div>
-
-        <!-- Recent Sales Log Preview -->
-        <div class="bg-white rounded-3xl p-4 shadow-sm border border-cream-200 space-y-3">
-          <div class="flex justify-between items-center">
-            <h3 class="font-display text-sm font-bold text-choco-900"><i class="fa-solid fa-history text-amber-600 mr-1.5"></i> Recent Sales</h3>
-            <button onclick="switchTab('admin_sales')" class="text-xs font-semibold text-choco-600 hover:text-choco-800">View All &rarr;</button>
-          </div>
-          <div id="dashRecentSales" class="space-y-2">
-            <!-- Dynamic list -->
-          </div>
-        </div>
-      </section>
-
-      <!-- ==================== VIEW 4: INGREDIENTS CALCULATOR ==================== -->
-      <section id="view_admin_calc" class="app-view hidden animate-fadeIn space-y-4">
-        <!-- Yield & Cost Summary Header Card -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-cream-200 space-y-4">
-          <div class="flex justify-between items-center border-b border-stone-100 pb-3">
-            <div>
-              <h2 class="font-display text-base font-bold text-choco-900"><i class="fa-solid fa-calculator text-choco-600 mr-1.5"></i> Batch Yield Setting</h2>
-              <p class="text-xs text-stone-500">Boxes produced from 1 batch</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="number" id="batchYieldInput" value="10" min="1" onchange="updateBatchYield(this.value)" class="w-16 text-center font-bold text-base px-2 py-1.5 bg-cream-100 border border-choco-300 rounded-xl focus:outline-none focus:border-choco-600">
-              <span class="text-xs font-semibold text-stone-600">Boxes</span>
-            </div>
-          </div>
-
-          <!-- Total Batch & Unit Cost Output -->
-          <div class="grid grid-cols-2 gap-3 pt-1">
-            <div class="bg-cream-100 p-3 rounded-2xl border border-cream-300">
-              <p class="text-[10px] font-bold uppercase text-stone-500">Total Batch Cost</p>
-              <p id="calcTotalBatchCost" class="font-display text-lg font-extrabold text-choco-900">RM 0.00</p>
-            </div>
-            <div class="bg-emerald-50 p-3 rounded-2xl border border-emerald-200">
-              <p class="text-[10px] font-bold uppercase text-emerald-700">Cost per Box</p>
-              <p id="calcCostPerBox" class="font-display text-lg font-extrabold text-emerald-800">RM 0.00</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Add Ingredient Button & List -->
-        <div class="flex justify-between items-center px-1">
-          <h3 class="font-display text-sm font-bold text-choco-900">Ingredient Cost Breakdown</h3>
-          <button onclick="openIngredientModal()" class="bg-choco-700 hover:bg-choco-800 text-white text-xs px-3 py-1.5 rounded-xl font-semibold shadow transition flex items-center gap-1">
-            <i class="fa-solid fa-plus text-xs"></i> Add Ingredient
-          </button>
-        </div>
-
-        <!-- Ingredient List Cards -->
-        <div id="ingredientsList" class="space-y-2">
-          <!-- Dynamic ingredient items inserted here -->
-        </div>
-      </section>
-
-      <!-- ==================== VIEW 5: SALES TRACKER ==================== -->
-      <section id="view_admin_sales" class="app-view hidden animate-fadeIn space-y-4">
-        <!-- Add Sale Header Banner -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-cream-200 flex justify-between items-center">
-          <div>
-            <h2 class="font-display text-base font-bold text-choco-900">Sales Record Log</h2>
-            <p class="text-xs text-stone-500">Track box orders and net profits</p>
-          </div>
-          <button onclick="openSaleModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition flex items-center gap-1.5">
-            <i class="fa-solid fa-plus"></i> Record Sale
-          </button>
-        </div>
-
-        <!-- Sales History List -->
-        <div id="salesList" class="space-y-2.5">
-          <!-- Dynamic Sales items -->
-        </div>
-      </section>
-
-      <!-- ==================== VIEW 6: QR & APP SETTINGS (ADMIN) ==================== -->
-      <section id="view_admin_settings" class="app-view hidden animate-fadeIn space-y-4">
-        <!-- QR & Payment Settings Form -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-cream-200 space-y-3">
-          <h2 class="font-display text-base font-bold text-choco-900 flex items-center gap-2">
-            <i class="fa-solid fa-sliders text-amber-600"></i> Payment QR & Bank Details
-          </h2>
-
-          <form onsubmit="handleSaveSettings(event)" class="space-y-3 text-xs">
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">QR Code Image URL</label>
-              <input type="url" id="settingQrUrl" required class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50">
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Bank / Provider Name</label>
-              <input type="text" id="settingBankName" required class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50">
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Account Holder Name</label>
-              <input type="text" id="settingAccountName" required class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50">
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Account Number</label>
-              <input type="text" id="settingAccountNum" required class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50">
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Customer Payment Instructions</label>
-              <input type="text" id="settingNotes" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50">
-            </div>
-
-            <button type="submit" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-2.5 rounded-xl shadow transition">
-              Save Payment Settings
-            </button>
-          </form>
-        </div>
-
-        <!-- Change Password Card -->
-        <div class="bg-white rounded-3xl p-5 shadow-sm border border-cream-200 space-y-3">
-          <h2 class="font-display text-base font-bold text-choco-900 flex items-center gap-2">
-            <i class="fa-solid fa-key text-choco-600"></i> Change Admin Password
-          </h2>
-          <form onsubmit="handleChangePassword(event)" class="space-y-3 text-xs">
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">New Password</label>
-              <input type="password" id="newAdminPassword" required minlength="4" placeholder="Enter new password" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-500 bg-cream-50">
-            </div>
-            <button type="submit" class="w-full bg-stone-800 hover:bg-stone-900 text-white font-bold py-2.5 rounded-xl shadow transition">
-              Update Admin Password
-            </button>
-          </form>
-        </div>
-
-        <!-- Database Status Card -->
-        <div class="bg-cream-200 rounded-3xl p-4 border border-cream-300 text-xs text-stone-600 space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="font-semibold"><i class="fa-solid fa-database text-choco-600"></i> Cloud Storage Status:</span>
-            <span id="cloudStatusBadge" class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full text-[10px]">Connected</span>
-          </div>
-          <p class="text-[11px] text-stone-500">All data automatically syncs to Firebase Cloud Firestore and caches locally for offline use.</p>
-        </div>
-      </section>
-
-    </main>
-
-    <!-- Navigation Bar (Dynamic based on Customer vs Admin) -->
-    <nav class="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-cream-300 px-3 py-2 flex justify-around items-center z-30 shadow-lg">
-      
-      <!-- CUSTOMER TABS -->
-      <button id="nav_customer_qr" onclick="switchTab('customer_qr')" class="nav-item flex flex-col items-center gap-1 text-choco-700 font-bold transition">
-        <i class="fa-solid fa-qrcode text-lg"></i>
-        <span class="text-[10px]">Pay & QR</span>
-      </button>
-
-      <button id="nav_customer_feedback" onclick="switchTab('customer_feedback')" class="nav-item flex flex-col items-center gap-1 text-stone-400 hover:text-choco-600 font-medium transition">
-        <i class="fa-solid fa-star text-lg"></i>
-        <span class="text-[10px]">Feedback</span>
-      </button>
-
-      <!-- ADMIN ONLY TABS (Hidden by Default for Customers) -->
-      <button id="nav_admin_dashboard" onclick="switchTab('admin_dashboard')" class="nav-item admin-only hidden flex flex-col items-center gap-1 text-stone-400 hover:text-choco-600 font-medium transition">
-        <i class="fa-solid fa-chart-pie text-lg"></i>
-        <span class="text-[10px]">Dashboard</span>
-      </button>
-
-      <button id="nav_admin_calc" onclick="switchTab('admin_calc')" class="nav-item admin-only hidden flex flex-col items-center gap-1 text-stone-400 hover:text-choco-600 font-medium transition">
-        <i class="fa-solid fa-calculator text-lg"></i>
-        <span class="text-[10px]">Calculator</span>
-      </button>
-
-      <button id="nav_admin_sales" onclick="switchTab('admin_sales')" class="nav-item admin-only hidden flex flex-col items-center gap-1 text-stone-400 hover:text-choco-600 font-medium transition">
-        <i class="fa-solid fa-cash-register text-lg"></i>
-        <span class="text-[10px]">Sales</span>
-      </button>
-
-      <button id="nav_admin_settings" onclick="switchTab('admin_settings')" class="nav-item admin-only hidden flex flex-col items-center gap-1 text-stone-400 hover:text-choco-600 font-medium transition">
-        <i class="fa-solid fa-gear text-lg"></i>
-        <span class="text-[10px]">Settings</span>
-      </button>
-    </nav>
-
-    <!-- ==================== MODAL 1: ADMIN LOGIN ==================== -->
-    <div id="loginModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-      <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-cream-200 animate-fadeIn space-y-4 relative">
-        <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 text-lg">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-
-        <div class="text-center space-y-1">
-          <div class="w-12 h-12 bg-choco-100 text-choco-800 rounded-2xl mx-auto flex items-center justify-center text-xl font-bold mb-2">
-            <i class="fa-solid fa-user-lock"></i>
-          </div>
-          <h3 class="font-display text-lg font-bold text-choco-900">Admin Login</h3>
-          <p class="text-xs text-stone-500">Sign in to access dashboard & calculator</p>
-        </div>
-
-        <form onsubmit="handleLoginSubmit(event)" class="space-y-3">
-          <div>
-            <label class="block text-xs font-semibold text-stone-600 mb-1">Username</label>
-            <input type="text" id="loginUsername" required placeholder="admin" class="w-full text-sm px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-stone-600 mb-1">Password</label>
-            <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full text-sm px-3 py-2.5 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-          </div>
-
-          <button type="submit" class="w-full bg-choco-800 hover:bg-choco-900 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm flex items-center justify-center gap-2">
-            <i class="fa-solid fa-key"></i> Log In
-          </button>
-        </form>
-      </div>
     </div>
 
-    <!-- ==================== MODAL 2: ADD INGREDIENT ==================== -->
-    <div id="ingredientModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-      <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-cream-200 animate-fadeIn space-y-4 relative">
-        <button onclick="closeIngredientModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 text-lg">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
 
-        <h3 class="font-display text-base font-bold text-choco-900" id="ingredientModalTitle">Add New Ingredient</h3>
-
-        <form onsubmit="handleIngredientSubmit(event)" class="space-y-3 text-xs">
-          <input type="hidden" id="ingId">
-          <div>
-            <label class="block font-semibold text-stone-600 mb-1">Ingredient Name</label>
-            <input type="text" id="ingName" required placeholder="e.g. Marie Biscuits" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-          </div>
-
-          <div>
-            <label class="block font-semibold text-stone-600 mb-1">Package Price (RM)</label>
-            <input type="number" step="0.01" id="ingPrice" required placeholder="12.50" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Total Weight (g)</label>
-              <input type="number" step="1" id="ingTotalWeight" required placeholder="1000" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Weight Used (g)</label>
-              <input type="number" step="1" id="ingWeightUsed" required placeholder="500" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-            </div>
-          </div>
-
-          <button type="submit" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-2.5 rounded-xl shadow transition mt-2">
-            Save Ingredient
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- ==================== MODAL 3: RECORD SALE ==================== -->
-    <div id="saleModal" class="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-      <div class="bg-white w-full max-w-xs rounded-3xl p-6 shadow-2xl border border-cream-200 animate-fadeIn space-y-4 relative">
-        <button onclick="closeSaleModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 text-lg">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-
-        <h3 class="font-display text-base font-bold text-choco-900">Record New Sale</h3>
-
-        <form onsubmit="handleSaleSubmit(event)" class="space-y-3 text-xs">
-          <div>
-            <label class="block font-semibold text-stone-600 mb-1">Date</label>
-            <input type="date" id="saleDate" required class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-          </div>
-
-          <div>
-            <label class="block font-semibold text-stone-600 mb-1">Customer Name (Optional)</label>
-            <input type="text" id="saleCustomer" placeholder="e.g. Encik Razak" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-          </div>
-
-          <div class="grid grid-cols-2 gap-2">
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Boxes Sold</label>
-              <input type="number" min="1" id="saleQuantity" required placeholder="5" oninput="calculateSalePreview()" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-            </div>
-            <div>
-              <label class="block font-semibold text-stone-600 mb-1">Price / Box (RM)</label>
-              <input type="number" step="0.50" id="salePricePerBox" required value="18.00" oninput="calculateSalePreview()" class="w-full px-3 py-2 rounded-xl border border-stone-200 focus:outline-none focus:border-choco-600 bg-cream-50">
-            </div>
-          </div>
-
-          <!-- Preview calculation -->
-          <div class="bg-cream-100 p-2.5 rounded-xl space-y-1 text-[11px] border border-cream-300">
-            <div class="flex justify-between text-stone-600">
-              <span>Revenue:</span>
-              <span id="salePrevRevenue" class="font-bold">RM 0.00</span>
-            </div>
-            <div class="flex justify-between text-stone-600">
-              <span>Estimated Cost:</span>
-              <span id="salePrevCost" class="font-bold text-rose-600">RM 0.00</span>
-            </div>
-            <div class="flex justify-between text-emerald-700 font-bold pt-1 border-t border-cream-300">
-              <span>Net Profit:</span>
-              <span id="salePrevProfit">RM 0.00</span>
-            </div>
-          </div>
-
-          <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow transition">
-            Save Sale Record
-          </button>
-        </form>
-      </div>
-    </div>
-
-  </div>
-
-  <script>
-    /* ==========================================================================
-       APP STATE MANAGEMENT & FIREBASE CONFIGURATION
-       ========================================================================== */
-    const firebaseConfig = {
-      apiKey: "AIzaSyApCM07s1Malsb2XACOR5qNXooaXLkW-dc",
-      authDomain: "salestracker-1b3e2.firebaseapp.com",
-      databaseURL: "https://salestracker-1b3e2-default-rtdb.firebaseio.com",
-      projectId: "salestracker-1b3e2",
-      storageBucket: "salestracker-1b3e2.firebasestorage.app",
-      messagingSenderId: "637145526594",
-      appId: "1:637145526594:web:5120d6fb0e74b4667998db",
-      measurementId: "G-XNSRZWZZXZ"
-    };
-
-    // Global App State
-    let state = {
-      isAdmin: false,
-      activeTab: 'customer_qr',
-      currentRating: 5,
-      yieldCount: 10,
-      ingredients: [
-        { id: '1', name: 'Marie Biscuits', price: 12.50, totalWeight: 1000, weightUsed: 500 },
-        { id: '2', name: 'Butter (Unsalted)', price: 15.00, totalWeight: 250, weightUsed: 200 },
-        { id: '3', name: 'Condensed Milk', price: 4.80, totalWeight: 500, weightUsed: 250 },
-        { id: '4', name: 'Cocoa Powder', price: 18.00, totalWeight: 400, weightUsed: 100 },
-        { id: '5', name: 'Milo Powder', price: 16.50, totalWeight: 500, weightUsed: 150 }
-      ],
-      sales: [
-        { id: 's1', date: new Date().toISOString().split('T')[0], quantity: 5, pricePerBox: 18.00, totalRevenue: 90.00, totalCost: 35.80, totalProfit: 54.20, customer: 'Siti Aminah' }
-      ],
-      feedbacks: [
-        { id: 'f1', name: 'Farah Nabilah', rating: 5, comment: 'Sedap sangat Kek Batik ni! Soft, chocolatey and perfectly sweet!', date: '2026-09-24' },
-        { id: 'f2', name: 'Jason Tan', rating: 5, comment: 'Rich cocoa aroma, fast delivery. Will repeat order!', date: '2026-09-23' }
-      ],
-      qrSettings: {
-        qrUrl: 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=DuitNow-KekBatik-BakedWithLove',
-        bankName: 'Maybank / DuitNow',
-        accountName: 'Baked With Love Enterprise',
-        accountNumber: '5140 1234 5678',
-        notes: 'Please include your name in payment reference upon transfer.'
-      },
-      adminPassword: 'password123'
-    };
-
-    let db = null;
-    let financeChart = null;
-
-    function initFirebase() {
-      try {
-        if (typeof firebase !== 'undefined') {
-          if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-          }
-          db = firebase.firestore();
-          console.log("Firebase initialized successfully.");
-          document.getElementById('cloudStatusBadge').innerText = "Sync Active";
-          loadDataFromFirebase();
-        }
-      } catch (e) {
-        console.warn("Firebase fallback to LocalStorage:", e);
-        document.getElementById('cloudStatusBadge').innerText = "Offline Mode";
-        loadDataFromLocalStorage();
-      }
-    }
-
-    function saveData() {
-      localStorage.setItem('kek_batik_app_state', JSON.stringify({
-        yieldCount: state.yieldCount,
-        ingredients: state.ingredients,
-        sales: state.sales,
-        feedbacks: state.feedbacks,
-        qrSettings: state.qrSettings,
-        adminPassword: state.adminPassword
-      }));
-
-      // Push to Firestore if online
-      if (db) {
-        try {
-          db.collection('artifacts').doc('kek_batik_sales_tracker').set({
-            yieldCount: state.yieldCount,
-            ingredients: state.ingredients,
-            sales: state.sales,
-            feedbacks: state.feedbacks,
-            qrSettings: state.qrSettings,
-            adminPassword: state.adminPassword,
-            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-          }, { merge: true });
-        } catch (err) {
-          console.warn("Firestore sync write suppressed:", err);
-        }
-      }
-    }
-
-    function loadDataFromLocalStorage() {
-      const saved = localStorage.getItem('kek_batik_app_state');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          state.yieldCount = parsed.yieldCount || state.yieldCount;
-          state.ingredients = parsed.ingredients || state.ingredients;
-          state.sales = parsed.sales || state.sales;
-          state.feedbacks = parsed.feedbacks || state.feedbacks;
-          state.qrSettings = parsed.qrSettings || state.qrSettings;
-          state.adminPassword = parsed.adminPassword || state.adminPassword;
-        } catch (e) {
-          console.error("Error parsing local state:", e);
-        }
-      }
-      renderAll();
-    }
-
-    function loadDataFromFirebase() {
-      if (!db) return loadDataFromLocalStorage();
-      db.collection('artifacts').doc('kek_batik_sales_tracker')
-        .onSnapshot((doc) => {
-          if (doc.exists) {
-            const data = doc.data();
-            if (data.yieldCount) state.yieldCount = data.yieldCount;
-            if (data.ingredients) state.ingredients = data.ingredients;
-            if (data.sales) state.sales = data.sales;
-            if (data.feedbacks) state.feedbacks = data.feedbacks;
-            if (data.qrSettings) state.qrSettings = data.qrSettings;
-            if (data.adminPassword) state.adminPassword = data.adminPassword;
-          }
-          renderAll();
-        }, (err) => {
-          console.warn("Firestore listen error, using LocalStorage:", err);
-          loadDataFromLocalStorage();
-        });
-    }
-
-    function switchTab(tabId) {
-      state.activeTab = tabId;
-
-      // Hide all views
-      document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
-      
-      // Show target view
-      const targetView = document.getElementById(`view_${tabId}`);
-      if (targetView) targetView.classList.remove('hidden');
-
-      // Update Nav active styles
-      document.querySelectorAll('.nav-item').forEach(el => {
-        el.classList.remove('text-choco-700', 'font-bold');
-        el.classList.add('text-stone-400', 'font-medium');
-      });
-
-      const activeNavBtn = document.getElementById(`nav_${tabId}`);
-      if (activeNavBtn) {
-        activeNavBtn.classList.remove('text-stone-400', 'font-medium');
-        activeNavBtn.classList.add('text-choco-700', 'font-bold');
-      }
-
-      if (tabId === 'admin_dashboard') {
-        renderFinanceChart();
-      }
-    }
-
-    function openLoginModal() {
-      document.getElementById('loginModal').classList.remove('hidden');
-    }
-
-    function closeLoginModal() {
-      document.getElementById('loginModal').classList.add('hidden');
-    }
-
-    function handleLoginSubmit(e) {
-      e.preventDefault();
-      const user = document.getElementById('loginUsername').value.trim();
-      const pass = document.getElementById('loginPassword').value.trim();
-
-      if (user.toLowerCase() === 'admin' && pass === state.adminPassword) {
-        state.isAdmin = true;
-        closeLoginModal();
-        showToast("Login Successful! Welcome Admin.", "success");
-        updateAdminUIState();
-        switchTab('admin_dashboard');
-      } else {
-        showToast("Invalid Username or Password!", "error");
-      }
-    }
-
-    function handleLogout() {
-      state.isAdmin = false;
-      updateAdminUIState();
-      switchTab('customer_qr');
-      showToast("Logged out of Admin Mode.", "info");
-    }
-
-    function updateAdminUIState() {
-      const adminStatusBar = document.getElementById('adminStatusBar');
-      const headerAuthBtn = document.getElementById('headerAuthBtn');
-      const adminElements = document.querySelectorAll('.admin-only');
-
-      if (state.isAdmin) {
-        adminStatusBar.classList.remove('hidden');
-        headerAuthBtn.classList.add('hidden');
-        adminElements.forEach(el => el.classList.remove('hidden'));
-      } else {
-        adminStatusBar.classList.add('hidden');
-        headerAuthBtn.classList.remove('hidden');
-        adminElements.forEach(el => el.classList.add('hidden'));
-      }
-    }
-
-    function calculateIngredientCost(ing) {
-      if (!ing.totalWeight || ing.totalWeight <= 0) return 0;
-      return (ing.price / ing.totalWeight) * ing.weightUsed;
-    }
-
-    function getBatchTotalCost() {
-      return state.ingredients.reduce((sum, ing) => sum + calculateIngredientCost(ing), 0);
-    }
-
-    function getCostPerBox() {
-      const yieldCnt = state.yieldCount || 1;
-      return getBatchTotalCost() / yieldCnt;
-    }
-
-    function updateBatchYield(val) {
-      state.yieldCount = Math.max(1, parseInt(val) || 1);
-      saveData();
-      renderCalculatorView();
-      renderDashboardView();
-    }
-
-    function setRating(score) {
-      state.currentRating = score;
-      document.getElementById('ratingScoreText').innerText = `(${score} / 5)`;
-      const stars = document.querySelectorAll('#starRatingSelector i');
-      stars.forEach((star, idx) => {
-        if (idx < score) {
-          star.className = 'fa-solid fa-star cursor-pointer transition hover:scale-110 text-amber-400';
-        } else {
-          star.className = 'fa-regular fa-star cursor-pointer transition hover:scale-110 text-stone-300';
-        }
-      });
-    }
-
-    function handleFeedbackSubmit(e) {
-      e.preventDefault();
-      const name = document.getElementById('feedbackName').value.trim();
-      const comment = document.getElementById('feedbackComment').value.trim();
-
-      if (!name || !comment) return;
-
-      const newFeedback = {
-        id: 'f_' + Date.now(),
-        name: name,
-        rating: state.currentRating,
-        comment: comment,
-        date: new Date().toISOString().split('T')[0]
-      };
-
-      state.feedbacks.unshift(newFeedback);
-      saveData();
-
-      document.getElementById('feedbackForm').reset();
-      setRating(5);
-      showToast("Thank you for your review!", "success");
-      renderFeedbackList();
-    }
-
-    function renderFeedbackList() {
-      const container = document.getElementById('feedbackList');
-      const countEl = document.getElementById('feedbackCount');
-      const avgEl = document.getElementById('avgRatingDisplay');
-
-      countEl.innerText = state.feedbacks.length;
-
-      if (state.feedbacks.length === 0) {
-        container.innerHTML = `<div class="bg-white p-4 rounded-2xl text-center text-xs text-stone-400">No reviews yet. Be the first to leave feedback!</div>`;
-        avgEl.innerText = "★ 5.0 Avg";
-        return;
-      }
-
-      const totalRating = state.feedbacks.reduce((acc, curr) => acc + curr.rating, 0);
-      const avg = (totalRating / state.feedbacks.length).toFixed(1);
-      avgEl.innerText = `★ ${avg} Avg`;
-
-      container.innerHTML = state.feedbacks.map(f => {
-        const starsHtml = Array(5).fill(0).map((_, i) => 
-          `<i class="fa-${i < f.rating ? 'solid' : 'regular'} fa-star text-amber-400 text-xs"></i>`
-        ).join('');
-
-        return `
-          <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-cream-200 space-y-1.5 animate-fadeIn">
-            <div class="flex justify-between items-center">
-              <span class="font-bold text-xs text-choco-900">${escapeHtml(f.name)}</span>
-              <span class="text-[10px] text-stone-400">${f.date}</span>
-            </div>
-            <div class="flex items-center gap-1">${starsHtml}</div>
-            <p class="text-xs text-stone-600 leading-relaxed">${escapeHtml(f.comment)}</p>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function renderCalculatorView() {
-      document.getElementById('batchYieldInput').value = state.yieldCount;
-      const totalBatchCost = getBatchTotalCost();
-      const costPerBox = getCostPerBox();
-
-      document.getElementById('calcTotalBatchCost').innerText = `RM ${totalBatchCost.toFixed(2)}`;
-      document.getElementById('calcCostPerBox').innerText = `RM ${costPerBox.toFixed(2)}`;
-
-      const listContainer = document.getElementById('ingredientsList');
-
-      if (state.ingredients.length === 0) {
-        listContainer.innerHTML = `<div class="bg-white p-4 rounded-2xl text-center text-xs text-stone-400">No ingredients added yet. Click "Add Ingredient" above.</div>`;
-        return;
-      }
-
-      listContainer.innerHTML = state.ingredients.map(ing => {
-        const cost = calculateIngredientCost(ing);
-        return `
-          <div class="bg-white rounded-2xl p-3 shadow-sm border border-cream-200 flex justify-between items-center">
-            <div class="space-y-0.5">
-              <h4 class="font-bold text-xs text-choco-900">${escapeHtml(ing.name)}</h4>
-              <p class="text-[11px] text-stone-400">
-                RM ${ing.price.toFixed(2)} for ${ing.totalWeight}g &bull; Used: <span class="font-semibold text-stone-600">${ing.weightUsed}g</span>
-              </p>
-            </div>
-            <div class="flex items-center gap-3">
-              <div class="text-right">
-                <span class="text-xs font-bold text-emerald-700 block">RM ${cost.toFixed(2)}</span>
-                <span class="text-[9px] text-stone-400">Cost/Batch</span>
-              </div>
-              <div class="flex gap-1">
-                <button onclick="editIngredient('${ing.id}')" class="text-stone-400 hover:text-choco-600 p-1 text-xs">
-                  <i class="fa-solid fa-pen"></i>
+    <!-- Admin Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-5 card-shadow space-y-4 border border-choco-100 animate-fadeIn">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+                <h3 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-choco-700"></i> Admin Login
+                </h3>
+                <button onclick="closeLoginModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
-                <button onclick="deleteIngredient('${ing.id}')" class="text-stone-400 hover:text-rose-600 p-1 text-xs">
-                  <i class="fa-solid fa-trash"></i>
+            </div>
+
+            <div class="space-y-3">
+                <div id="loginErrorMsg" class="hidden text-[11px] bg-rose-50 border border-rose-200 text-rose-600 p-2 rounded-lg font-medium"></div>
+
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-600">Username</label>
+                    <input type="text" id="loginUser" placeholder="admin" value="admin"
+                        class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                </div>
+
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-600">Password</label>
+                    <input type="password" id="loginPass" placeholder="password123" value="password123"
+                        class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                </div>
+
+                <button onclick="handleAdminLogin()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md mt-1">
+                    Sign In as Admin
                 </button>
-              </div>
             </div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function openIngredientModal(ingId = null) {
-      document.getElementById('ingId').value = '';
-      document.getElementById('ingName').value = '';
-      document.getElementById('ingPrice').value = '';
-      document.getElementById('ingTotalWeight').value = '';
-      document.getElementById('ingWeightUsed').value = '';
-
-      if (ingId) {
-        const ing = state.ingredients.find(i => i.id === ingId);
-        if (ing) {
-          document.getElementById('ingId').value = ing.id;
-          document.getElementById('ingName').value = ing.name;
-          document.getElementById('ingPrice').value = ing.price;
-          document.getElementById('ingTotalWeight').value = ing.totalWeight;
-          document.getElementById('ingWeightUsed').value = ing.weightUsed;
-          document.getElementById('ingredientModalTitle').innerText = "Edit Ingredient";
-        }
-      } else {
-        document.getElementById('ingredientModalTitle').innerText = "Add New Ingredient";
-      }
-
-      document.getElementById('ingredientModal').classList.remove('hidden');
-    }
-
-    function closeIngredientModal() {
-      document.getElementById('ingredientModal').classList.add('hidden');
-    }
-
-    function handleIngredientSubmit(e) {
-      e.preventDefault();
-      const id = document.getElementById('ingId').value;
-      const name = document.getElementById('ingName').value.trim();
-      const price = parseFloat(document.getElementById('ingPrice').value) || 0;
-      const totalWeight = parseFloat(document.getElementById('ingTotalWeight').value) || 0;
-      const weightUsed = parseFloat(document.getElementById('ingWeightUsed').value) || 0;
-
-      if (id) {
-        const idx = state.ingredients.findIndex(i => i.id === id);
-        if (idx !== -1) {
-          state.ingredients[idx] = { id, name, price, totalWeight, weightUsed };
-        }
-      } else {
-        state.ingredients.push({
-          id: 'i_' + Date.now(),
-          name, price, totalWeight, weightUsed
-        });
-      }
-
-      saveData();
-      closeIngredientModal();
-      showToast("Ingredient saved successfully!", "success");
-      renderCalculatorView();
-      renderDashboardView();
-    }
-
-    function deleteIngredient(id) {
-      state.ingredients = state.ingredients.filter(i => i.id !== id);
-      saveData();
-      showToast("Ingredient removed.", "info");
-      renderCalculatorView();
-      renderDashboardView();
-    }
-
-    function openSaleModal() {
-      document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
-      document.getElementById('saleCustomer').value = '';
-      document.getElementById('saleQuantity').value = '1';
-      document.getElementById('salePricePerBox').value = '18.00';
-      calculateSalePreview();
-      document.getElementById('saleModal').classList.remove('hidden');
-    }
-
-    function closeSaleModal() {
-      document.getElementById('saleModal').classList.add('hidden');
-    }
-
-    function calculateSalePreview() {
-      const qty = parseInt(document.getElementById('saleQuantity').value) || 0;
-      const price = parseFloat(document.getElementById('salePricePerBox').value) || 0;
-      const costPerBox = getCostPerBox();
-
-      const rev = qty * price;
-      const cost = qty * costPerBox;
-      const profit = rev - cost;
-
-      document.getElementById('salePrevRevenue').innerText = `RM ${rev.toFixed(2)}`;
-      document.getElementById('salePrevCost').innerText = `RM ${cost.toFixed(2)}`;
-      document.getElementById('salePrevProfit').innerText = `RM ${profit.toFixed(2)}`;
-    }
-
-    function handleSaleSubmit(e) {
-      e.preventDefault();
-      const date = document.getElementById('saleDate').value;
-      const customer = document.getElementById('saleCustomer').value.trim() || 'Walk-in Customer';
-      const quantity = parseInt(document.getElementById('saleQuantity').value) || 1;
-      const pricePerBox = parseFloat(document.getElementById('salePricePerBox').value) || 0;
-
-      const costPerBox = getCostPerBox();
-      const totalRevenue = quantity * pricePerBox;
-      const totalCost = quantity * costPerBox;
-      const totalProfit = totalRevenue - totalCost;
-
-      const newSale = {
-        id: 's_' + Date.now(),
-        date,
-        customer,
-        quantity,
-        pricePerBox,
-        totalRevenue,
-        totalCost,
-        totalProfit
-      };
-
-      state.sales.unshift(newSale);
-      saveData();
-      closeSaleModal();
-      showToast("Sale recorded successfully!", "success");
-      renderSalesList();
-      renderDashboardView();
-    }
-
-    function deleteSale(id) {
-      state.sales = state.sales.filter(s => s.id !== id);
-      saveData();
-      showToast("Sale record deleted.", "info");
-      renderSalesList();
-      renderDashboardView();
-    }
-
-    function renderSalesList() {
-      const container = document.getElementById('salesList');
-
-      if (state.sales.length === 0) {
-        container.innerHTML = `<div class="bg-white p-4 rounded-2xl text-center text-xs text-stone-400">No sales recorded yet. Click "Record Sale" above.</div>`;
-        return;
-      }
-
-      container.innerHTML = state.sales.map(s => `
-        <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-cream-200 flex justify-between items-center">
-          <div class="space-y-1">
-            <div class="flex items-center gap-2">
-              <span class="font-bold text-xs text-choco-900">${escapeHtml(s.customer)}</span>
-              <span class="text-[10px] bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded-md">${s.quantity} Boxes</span>
-            </div>
-            <p class="text-[10px] text-stone-400">${s.date} &bull; RM ${s.pricePerBox.toFixed(2)} / box</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="text-right">
-              <span class="text-xs font-extrabold text-emerald-700 block">+RM ${s.totalProfit.toFixed(2)}</span>
-              <span class="text-[10px] text-stone-400">Rev: RM ${s.totalRevenue.toFixed(2)}</span>
-            </div>
-            <button onclick="deleteSale('${s.id}')" class="text-stone-300 hover:text-rose-600 p-1 text-xs transition">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
         </div>
-      `).join('');
-    }
+    </div>
 
-    function renderDashboardView() {
-      const totalRev = state.sales.reduce((acc, s) => acc + s.totalRevenue, 0);
-      const totalCost = state.sales.reduce((acc, s) => acc + s.totalCost, 0);
-      const totalProfit = totalRev - totalCost;
-      const totalBoxes = state.sales.reduce((acc, s) => acc + s.quantity, 0);
-      const margin = totalRev > 0 ? ((totalProfit / totalRev) * 100).toFixed(1) : '0';
 
-      document.getElementById('dashTotalProfit').innerText = `RM ${totalProfit.toFixed(2)}`;
-      document.getElementById('dashTotalRevenue').innerText = `RM ${totalRev.toFixed(2)}`;
-      document.getElementById('dashTotalCost').innerText = `RM ${totalCost.toFixed(2)}`;
-      document.getElementById('dashCostPerBox').innerText = `RM ${getCostPerBox().toFixed(2)}`;
-      document.getElementById('dashTotalBoxes').innerText = `${totalBoxes} Boxes`;
-      document.getElementById('dashProfitMargin').innerText = `${margin}% Margin`;
+    <!-- Lightbox Photo Viewer Modal -->
+    <div id="lightboxModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="closeLightbox()">
+        <div class="relative max-w-sm w-full" onclick="event.stopPropagation()">
+            <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-2xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="lightboxImg" class="w-full rounded-2xl max-h-[80vh] object-contain shadow-2xl border border-white/20">
+        </div>
+    </div>
 
-      // Recent 3 sales preview
-      const recentContainer = document.getElementById('dashRecentSales');
-      const recent = state.sales.slice(0, 3);
 
-      if (recent.length === 0) {
-        recentContainer.innerHTML = `<p class="text-xs text-stone-400 text-center py-2">No recent sales.</p>`;
-      } else {
-        recentContainer.innerHTML = recent.map(s => `
-          <div class="flex justify-between items-center text-xs py-1 border-b border-stone-100 last:border-none">
-            <div>
-              <span class="font-semibold text-stone-800">${escapeHtml(s.customer)}</span>
-              <span class="text-[10px] text-stone-400 block">${s.date} (${s.quantity} boxes)</span>
-            </div>
-            <span class="font-bold text-emerald-700">+RM ${s.totalProfit.toFixed(2)}</span>
-          </div>
-        `).join('');
-      }
+    <!-- Toast Notification Overlay -->
+    <div id="toastContainer" class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-xs pointer-events-none px-4"></div>
 
-      renderFinanceChart();
-    }
 
-    function renderFinanceChart() {
-      const ctx = document.getElementById('financeChart');
-      if (!ctx) return;
+    <!-- Firebase Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-      const totalRev = state.sales.reduce((acc, s) => acc + s.totalRevenue, 0);
-      const totalCost = state.sales.reduce((acc, s) => acc + s.totalCost, 0);
-      const totalProfit = Math.max(0, totalRev - totalCost);
+        const firebaseConfig = {
+            apiKey: "AIzaSyApCM07s1Malsb2XACOR5qNXooaXLkW-dc",
+            authDomain: "salestracker-1b3e2.firebaseapp.com",
+            databaseURL: "https://salestracker-1b3e2-default-rtdb.firebaseio.com",
+            projectId: "salestracker-1b3e2",
+            storageBucket: "salestracker-1b3e2.firebasestorage.app",
+            messagingSenderId: "637145526594",
+            appId: "1:637145526594:web:5120d6fb0e74b4667998db",
+            measurementId: "G-XNSRZWZZXZ"
+        };
 
-      if (financeChart) {
-        financeChart.destroy();
-      }
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
 
-      financeChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Net Profit', 'Total Expenses'],
-          datasets: [{
-            data: [totalProfit, totalCost],
-            backgroundColor: ['#10B981', '#EF4444'],
-            borderWidth: 0,
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                boxWidth: 12,
-                font: { size: 11, family: 'Inter' }
-              }
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'kek-batik-tracker';
+
+        // Public collection paths per Rule 1
+        const getColPath = (colName) => collection(db, 'artifacts', appId, 'public', 'data', colName);
+        const getDocPath = (colName, docId) => doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+
+        // Global App State
+        window.appState = {
+            isAdmin: false,
+            activeTab: 'reviews', // Default view for customers
+            starRating: 5,
+            reviewPhotoBase64: null,
+            qrPhotoBase64: null,
+            yieldCount: 10,
+            ingredients: [
+                { id: '1', name: 'Butter', price: 12.50, pkgGrams: 250, usedGrams: 200 },
+                { id: '2', name: 'Marie Biscuit', price: 5.80, pkgGrams: 300, usedGrams: 250 },
+                { id: '3', name: 'Milo Powder', price: 18.00, pkgGrams: 500, usedGrams: 150 },
+                { id: '4', name: 'Condensed Milk', price: 4.20, pkgGrams: 500, usedGrams: 200 }
+            ],
+            sales: [
+                { id: 's1', qty: 2, price: 15.00, total: 30.00, costPerBox: 3.25, profit: 23.50, date: '2026-09-20', notes: 'First order' },
+                { id: 's2', qty: 5, price: 15.00, total: 75.00, costPerBox: 3.25, profit: 58.75, date: '2026-09-22', notes: 'Office group buy' }
+            ],
+            reviews: [
+                { id: 'r1', name: 'Aina R.', rating: 5, comment: 'Sedap sangat! Not too sweet and super fudgy chocolate layer!', photo: null, timestamp: Date.now() - 86400000 },
+                { id: 'r2', name: 'Farhan K.', rating: 5, comment: 'Best Kek Batik in town. Ordered 3 boxes for family gathering!', photo: null, timestamp: Date.now() - 172800000 }
+            ],
+            settings: {
+                bankName: 'Maybank',
+                accHolder: 'MUHAMMAD FAIZ ',
+                accNum: '5648 1234 9901',
+                qrUrl: 'https://placehold.co/300x300/6b4226/ffffff?text=DuitNow+QR'
             }
-          },
-          cutout: '70%'
+        };
+
+        let chartInstance = null;
+
+        // Initialize Auth & Firestore Listeners
+        async function initApp() {
+            try {
+                await signInAnonymously(auth);
+                console.log("Firebase Auth signed in anonymously.");
+            } catch (err) {
+                console.warn("Auth fallback mode active:", err);
+            }
+
+            // Set default date picker to today
+            const todayStr = new Date().toISOString().split('T')[0];
+            const saleDateInput = document.getElementById('saleDate');
+            if (saleDateInput) saleDateInput.value = todayStr;
+
+            // Firestore Snapshot Listeners
+            setupFirestoreListeners();
+
+            // Render UI
+            renderNavigation();
+            renderAllViews();
         }
-      });
-    }
 
-    function renderSettingsView() {
-      document.getElementById('displayBankName').innerText = state.qrSettings.bankName;
-      document.getElementById('displayAccountName').innerText = state.qrSettings.accountName;
-      document.getElementById('displayAccountNum').innerText = state.qrSettings.accountNumber;
-      document.getElementById('displayNotes').innerText = state.qrSettings.notes;
-      document.getElementById('qrDisplayImg').src = state.qrSettings.qrUrl;
+        function setupFirestoreListeners() {
+            // 1. Ingredients Listener
+            onSnapshot(getColPath('ingredients'), (snapshot) => {
+                if (!snapshot.empty) {
+                    window.appState.ingredients = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    renderIngredients();
+                    updateCalculationsAndDashboard();
+                }
+            }, (err) => console.warn("Firestore ingredients sync offline fallback:", err));
 
-      document.getElementById('settingQrUrl').value = state.qrSettings.qrUrl;
-      document.getElementById('settingBankName').value = state.qrSettings.bankName;
-      document.getElementById('settingAccountName').value = state.qrSettings.accountName;
-      document.getElementById('settingAccountNum').value = state.qrSettings.accountNumber;
-      document.getElementById('settingNotes').value = state.qrSettings.notes;
-    }
+            // 2. Sales Listener
+            onSnapshot(getColPath('sales'), (snapshot) => {
+                if (!snapshot.empty) {
+                    window.appState.sales = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    renderSales();
+                    updateCalculationsAndDashboard();
+                }
+            }, (err) => console.warn("Firestore sales sync offline fallback:", err));
 
-    function handleSaveSettings(e) {
-      e.preventDefault();
-      state.qrSettings = {
-        qrUrl: document.getElementById('settingQrUrl').value.trim(),
-        bankName: document.getElementById('settingBankName').value.trim(),
-        accountName: document.getElementById('settingAccountName').value.trim(),
-        accountNumber: document.getElementById('settingAccountNum').value.trim(),
-        notes: document.getElementById('settingNotes').value.trim()
-      };
+            // 3. Reviews Listener
+            onSnapshot(getColPath('reviews'), (snapshot) => {
+                if (!snapshot.empty) {
+                    window.appState.reviews = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    // Sort by timestamp desc
+                    window.appState.reviews.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    renderReviews();
+                }
+            }, (err) => console.warn("Firestore reviews sync offline fallback:", err));
 
-      saveData();
-      renderSettingsView();
-      showToast("Payment QR settings updated!", "success");
-    }
+            // 4. Settings Listener
+            onSnapshot(getColPath('settings'), (snapshot) => {
+                if (!snapshot.empty) {
+                    const settingsDoc = snapshot.docs.find(d => d.id === 'qr_config');
+                    if (settingsDoc) {
+                        window.appState.settings = settingsDoc.data();
+                        renderSettingsAndPayment();
+                    }
+                }
+            }, (err) => console.warn("Firestore settings sync offline fallback:", err));
+        }
 
-    function handleChangePassword(e) {
-      e.preventDefault();
-      const newPass = document.getElementById('newAdminPassword').value.trim();
-      if (newPass) {
-        state.adminPassword = newPass;
-        saveData();
-        document.getElementById('newAdminPassword').value = '';
-        showToast("Admin password updated successfully!", "success");
-      }
-    }
+        // Navigation Handler
+        window.switchTab = function(tabName) {
+            window.appState.activeTab = tabName;
+            
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
 
-    function copyAccountNumber() {
-      const num = state.qrSettings.accountNumber;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(num);
-      } else {
-        const el = document.createElement('textarea');
-        el.value = num;
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-      }
-      showToast("Account number copied to clipboard!", "info");
-    }
+            // Show selected tab
+            const target = document.getElementById(`tab-${tabName}`);
+            if (target) target.classList.remove('hidden');
 
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const messageEl = document.getElementById('toastMessage');
-      const iconEl = document.getElementById('toastIcon');
+            renderNavigation();
 
-      messageEl.innerText = message;
+            if (tabName === 'dashboard') {
+                setTimeout(renderProfitChart, 100);
+            }
+        };
 
-      if (type === 'success') {
-        iconEl.className = 'fa-solid fa-circle-check text-emerald-400 text-lg';
-      } else if (type === 'error') {
-        iconEl.className = 'fa-solid fa-circle-xmark text-rose-400 text-lg';
-      } else {
-        iconEl.className = 'fa-solid fa-circle-info text-amber-400 text-lg';
-      }
+        window.renderNavigation = function() {
+            const container = document.getElementById('navContainer');
+            if (!container) return;
 
-      container.classList.remove('opacity-0', '-translate-y-4');
-      container.classList.add('opacity-100', 'translate-y-0');
+            let tabs = [];
+            if (window.appState.isAdmin) {
+                tabs = [
+                    { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
+                    { id: 'ingredients', label: 'Ingredients', icon: 'fa-calculator' },
+                    { id: 'sales', label: 'Sales', icon: 'fa-cash-register' },
+                    { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
+                    { id: 'qr-settings', label: 'QR Config', icon: 'fa-qrcode' }
+                ];
+            } else {
+                tabs = [
+                    { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
+                    { id: 'pay', label: 'Pay & QR', icon: 'fa-qrcode' }
+                ];
+                // Ensure customer stays on allowed tab
+                if (window.appState.activeTab !== 'reviews' && window.appState.activeTab !== 'pay') {
+                    window.appState.activeTab = 'reviews';
+                    switchTab('reviews');
+                }
+            }
 
-      setTimeout(() => {
-        container.classList.remove('opacity-100', 'translate-y-0');
-        container.classList.add('opacity-0', '-translate-y-4');
-      }, 3000);
-    }
+            container.innerHTML = tabs.map(tab => {
+                const isActive = window.appState.activeTab === tab.id;
+                return `
+                    <button onclick="switchTab('${tab.id}')" 
+                        class="relative flex flex-col items-center py-1 px-2.5 transition text-xs ${isActive ? 'active-tab' : 'text-slate-400 hover:text-choco-700'}">
+                        <i class="fa-solid ${tab.icon} text-base mb-0.5"></i>
+                        <span class="text-[10px] tracking-tight font-medium">${tab.label}</span>
+                    </button>
+                `;
+            }).join('');
+        };
 
-    function escapeHtml(str) {
-      if (!str) return '';
-      return str.replace(/[&<>"']/g, function(m) {
-        return {
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#039;'
-        }[m];
-      });
-    }
+        window.openLoginModal = function() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('loginErrorMsg').classList.add('hidden');
+        };
 
-    function renderAll() {
-      renderSettingsView();
-      renderFeedbackList();
-      renderCalculatorView();
-      renderSalesList();
-      renderDashboardView();
-    }
+        window.closeLoginModal = function() {
+            document.getElementById('loginModal').classList.add('hidden');
+        };
 
-    // App Initialization on Load
-    window.onload = function() {
-      initFirebase();
-      updateAdminUIState();
-      switchTab('customer_qr');
-    };
-  </script>
+        window.handleAdminLogin = function() {
+            const user = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+
+            if (user === 'admin' && pass === 'password123') {
+                window.appState.isAdmin = true;
+                closeLoginModal();
+                updateAuthHeader();
+                showToast('Welcome Admin! Full controls unlocked.', 'success');
+                switchTab('dashboard');
+            } else {
+                const errBox = document.getElementById('loginErrorMsg');
+                errBox.innerText = 'Invalid username or password!';
+                errBox.classList.remove('hidden');
+            }
+        };
+
+        window.handleLogout = function() {
+            window.appState.isAdmin = false;
+            updateAuthHeader();
+            showToast('Logged out of Admin Mode.', 'info');
+            switchTab('reviews');
+        };
+
+        function updateAuthHeader() {
+            const headerBtn = document.getElementById('authHeaderBtn');
+            if (window.appState.isAdmin) {
+                headerBtn.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Admin Active</span>
+                        <button onclick="handleLogout()" class="text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-300/30 px-2.5 py-1 rounded-full font-semibold transition">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                headerBtn.innerHTML = `
+                    <button onclick="openLoginModal()" class="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-100 border border-amber-300/30 px-3 py-1.5 rounded-full font-semibold transition flex items-center gap-1.5 shadow-sm">
+                        <i class="fa-solid fa-lock text-[10px]"></i> Admin
+                    </button>
+                `;
+            }
+            renderNavigation();
+            renderReviews(); // Re-render to show/hide admin deletion trash icons
+        }
+
+        window.handleAddIngredient = async function() {
+            const name = document.getElementById('ingName').value.trim();
+            const price = parseFloat(document.getElementById('ingPrice').value);
+            const pkgGrams = parseFloat(document.getElementById('ingPkgGrams').value);
+            const usedGrams = parseFloat(document.getElementById('ingUsedGrams').value);
+
+            if (!name || isNaN(price) || isNaN(pkgGrams) || isNaN(usedGrams) || pkgGrams <= 0) {
+                showToast('Please fill out all ingredient details correctly.', 'error');
+                return;
+            }
+
+            const newIng = {
+                name,
+                price,
+                pkgGrams,
+                usedGrams
+            };
+
+            try {
+                const docRef = await addDoc(getColPath('ingredients'), newIng);
+                newIng.id = docRef.id;
+                showToast(`Added ${name}!`, 'success');
+            } catch (err) {
+                newIng.id = 'ing_' + Date.now();
+                window.appState.ingredients.push(newIng);
+                showToast(`Added ${name} (Local)!`, 'success');
+            }
+
+            document.getElementById('ingName').value = '';
+            document.getElementById('ingPrice').value = '';
+            document.getElementById('ingPkgGrams').value = '';
+            document.getElementById('ingUsedGrams').value = '';
+
+            renderIngredients();
+            updateCalculationsAndDashboard();
+        };
+
+        window.handleDeleteIngredient = async function(id) {
+            try {
+                await deleteDoc(getDocPath('ingredients', id));
+            } catch (err) {
+                window.appState.ingredients = window.appState.ingredients.filter(i => i.id !== id);
+            }
+            showToast('Ingredient removed.', 'info');
+            renderIngredients();
+            updateCalculationsAndDashboard();
+        };
+
+        window.updateBatchYield = function(val) {
+            const yieldVal = parseInt(val) || 1;
+            window.appState.yieldCount = yieldVal;
+            updateCalculationsAndDashboard();
+        };
+
+        function calculateBatchCost() {
+            let total = 0;
+            window.appState.ingredients.forEach(ing => {
+                // Formula = (Purchase Price / Package Weight in Grams) * Used Weight in Grams
+                const cost = (ing.price / ing.pkgGrams) * ing.usedGrams;
+                total += (isNaN(cost) ? 0 : cost);
+            });
+            return total;
+        }
+
+        function calculateCostPerBox() {
+            const totalBatch = calculateBatchCost();
+            const yieldQty = window.appState.yieldCount || 10;
+            return totalBatch / yieldQty;
+        }
+
+        function renderIngredients() {
+            const listEl = document.getElementById('ingredientList');
+            if (!listEl) return;
+
+            const totalBatch = calculateBatchCost();
+            document.getElementById('totalBatchCostBadge').innerText = `Batch Total: RM ${totalBatch.toFixed(2)}`;
+
+            if (window.appState.ingredients.length === 0) {
+                listEl.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No ingredients added yet.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = window.appState.ingredients.map(ing => {
+                const cost = (ing.price / ing.pkgGrams) * ing.usedGrams;
+                return `
+                    <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
+                        <div>
+                            <div class="font-bold text-choco-900">${ing.name}</div>
+                            <div class="text-[10px] text-slate-500">
+                                RM${ing.price.toFixed(2)} / ${ing.pkgGrams}g &bull; Used ${ing.usedGrams}g
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-bold text-rose-700">RM ${cost.toFixed(2)}</span>
+                            <button onclick="handleDeleteIngredient('${ing.id}')" class="text-slate-300 hover:text-rose-600 transition">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.handleLogSale = async function() {
+            const qty = parseInt(document.getElementById('saleQty').value) || 1;
+            const price = parseFloat(document.getElementById('salePrice').value) || 0;
+            const date = document.getElementById('saleDate').value || new Date().toISOString().split('T')[0];
+            const notes = document.getElementById('saleNotes').value.trim();
+
+            const costPerBox = calculateCostPerBox();
+            const total = qty * price;
+            const costTotal = qty * costPerBox;
+            const profit = total - costTotal;
+
+            const newSale = {
+                qty,
+                price,
+                total,
+                costPerBox,
+                profit,
+                date,
+                notes,
+                timestamp: Date.now()
+            };
+
+            try {
+                const docRef = await addDoc(getColPath('sales'), newSale);
+                newSale.id = docRef.id;
+                showToast('Sale logged successfully!', 'success');
+            } catch (err) {
+                newSale.id = 'sale_' + Date.now();
+                window.appState.sales.push(newSale);
+                showToast('Sale logged (Local)!', 'success');
+            }
+
+            document.getElementById('saleNotes').value = '';
+            renderSales();
+            updateCalculationsAndDashboard();
+        };
+
+        window.handleDeleteSale = async function(id) {
+            try {
+                await deleteDoc(getDocPath('sales', id));
+            } catch (err) {
+                window.appState.sales = window.appState.sales.filter(s => s.id !== id);
+            }
+            showToast('Sale entry removed.', 'info');
+            renderSales();
+            updateCalculationsAndDashboard();
+        };
+
+        function renderSales() {
+            const listEl = document.getElementById('salesList');
+            const badgeEl = document.getElementById('salesCountBadge');
+            if (!listEl) return;
+
+            badgeEl.innerText = `${window.appState.sales.length} Sales`;
+
+            if (window.appState.sales.length === 0) {
+                listEl.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No sales recorded yet.</div>`;
+                return;
+            }
+
+            // Sort by date desc
+            const sortedSales = [...window.appState.sales].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            listEl.innerHTML = sortedSales.map(s => {
+                return `
+                    <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
+                        <div>
+                            <div class="font-bold text-choco-900">${s.qty} Box(es) @ RM${parseFloat(s.price).toFixed(2)}</div>
+                            <div class="text-[10px] text-slate-500">${s.date} ${s.notes ? '&bull; ' + s.notes : ''}</div>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="text-right">
+                                <div class="font-extrabold text-amber-700">RM ${parseFloat(s.total).toFixed(2)}</div>
+                                <div class="text-[10px] font-bold text-emerald-600">+RM ${parseFloat(s.profit).toFixed(2)} profit</div>
+                            </div>
+                            <button onclick="handleDeleteSale('${s.id}')" class="text-slate-300 hover:text-rose-600 transition">
+                                <i class="fa-solid fa-trash-can text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateCalculationsAndDashboard() {
+            const costPerBox = calculateCostPerBox();
+            
+            // Dashboard values
+            let totalRevenue = 0;
+            let totalCost = 0;
+            let totalProfit = 0;
+            let totalBoxesSold = 0;
+
+            window.appState.sales.forEach(s => {
+                const qty = s.qty || 1;
+                const rev = s.total || (qty * (s.price || 0));
+                const cst = qty * (s.costPerBox || costPerBox);
+                const prf = rev - cst;
+
+                totalRevenue += rev;
+                totalCost += cst;
+                totalProfit += prf;
+                totalBoxesSold += qty;
+            });
+
+            const marginPct = totalRevenue > 0 ? ((totalProfit / totalRevenue) * 100).toFixed(0) : 0;
+
+            // Update UI elements
+            document.getElementById('dashProfit').innerText = `RM ${totalProfit.toFixed(2)}`;
+            document.getElementById('dashRevenue').innerText = `RM ${totalRevenue.toFixed(2)}`;
+            document.getElementById('dashCost').innerText = `RM ${totalCost.toFixed(2)}`;
+
+            document.getElementById('dashMargin').innerText = `${marginPct}% margin`;
+            document.getElementById('dashTotalBoxes').innerText = `${totalBoxesSold} boxes sold`;
+            document.getElementById('dashCostPerBox').innerText = `RM ${costPerBox.toFixed(2)}/box`;
+
+            document.getElementById('calcCostPerBox').innerText = `RM ${costPerBox.toFixed(2)}`;
+            document.getElementById('batchCostYieldText').innerText = `RM ${costPerBox.toFixed(2)} / Box`;
+
+            if (window.appState.activeTab === 'dashboard') {
+                renderProfitChart();
+            }
+        }
+
+        function renderProfitChart() {
+            const ctx = document.getElementById('profitChart');
+            if (!ctx) return;
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Group sales by date
+            const dateMap = {};
+            const sortedSales = [...window.appState.sales].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            sortedSales.forEach(s => {
+                const d = s.date || 'Today';
+                dateMap[d] = (dateMap[d] || 0) + parseFloat(s.profit || 0);
+            });
+
+            const labels = Object.keys(dateMap).length > 0 ? Object.keys(dateMap) : ['No Data'];
+            const dataValues = Object.keys(dateMap).length > 0 ? Object.values(dateMap) : [0];
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Profit (RM)',
+                        data: dataValues,
+                        borderColor: '#059669',
+                        backgroundColor: 'rgba(5, 150, 105, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#059669',
+                        pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { font: { size: 10 } },
+                            grid: { display: false }
+                        },
+                        y: {
+                            ticks: { font: { size: 10 } },
+                            grid: { color: '#f0e4dc' }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.selectStarRating = function(rating) {
+            window.appState.starRating = rating;
+            const stars = document.querySelectorAll('#starSelector i');
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.className = 'fa-solid fa-star text-amber-400';
+                } else {
+                    star.className = 'fa-regular fa-star text-amber-300';
+                }
+            });
+        };
+
+        window.handlePhotoUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Client side HTML5 Canvas compression
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 600;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > maxDim) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        }
+                    } else {
+                        if (height > maxDim) {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+                    window.appState.reviewPhotoBase64 = compressedBase64;
+
+                    document.getElementById('photoPreviewImg').src = compressedBase64;
+                    document.getElementById('photoPreviewContainer').classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.clearPhotoUpload = function() {
+            window.appState.reviewPhotoBase64 = null;
+            document.getElementById('revPhotoInput').value = '';
+            document.getElementById('photoPreviewContainer').classList.add('hidden');
+        };
+
+        window.handleSubmitReview = async function() {
+            const name = document.getElementById('revName').value.trim() || 'Happy Customer';
+            const comment = document.getElementById('revComment').value.trim();
+
+            if (!comment) {
+                showToast('Please leave a short feedback comment!', 'error');
+                return;
+            }
+
+            const newReview = {
+                name,
+                rating: window.appState.starRating,
+                comment,
+                photo: window.appState.reviewPhotoBase64,
+                timestamp: Date.now()
+            };
+
+            try {
+                const docRef = await addDoc(getColPath('reviews'), newReview);
+                newReview.id = docRef.id;
+                showToast('Thank you for your feedback!', 'success');
+            } catch (err) {
+                newReview.id = 'rev_' + Date.now();
+                window.appState.reviews.unshift(newReview);
+                showToast('Thank you for your feedback (Local)!', 'success');
+            }
+
+            // Reset form
+            document.getElementById('revName').value = '';
+            document.getElementById('revComment').value = '';
+            clearPhotoUpload();
+            selectStarRating(5);
+
+            renderReviews();
+        };
+
+        window.handleDeleteReview = async function(id) {
+            try {
+                await deleteDoc(getDocPath('reviews', id));
+            } catch (err) {
+                window.appState.reviews = window.appState.reviews.filter(r => r.id !== id);
+            }
+            showToast('Review deleted by Admin.', 'info');
+            renderReviews();
+        };
+
+        function renderReviews() {
+            const listEl = document.getElementById('reviewsList');
+            const badgeEl = document.getElementById('reviewCountBadge');
+            if (!listEl) return;
+
+            badgeEl.innerText = `${window.appState.reviews.length} Reviews`;
+
+            if (window.appState.reviews.length === 0) {
+                listEl.innerHTML = `<div class="p-6 text-center text-slate-400 bg-white rounded-2xl border border-choco-100 italic text-xs">No feedback submitted yet. Be the first!</div>`;
+                return;
+            }
+
+            listEl.innerHTML = window.appState.reviews.map(rev => {
+                const starHtml = Array.from({ length: 5 }, (_, i) => 
+                    `<i class="fa-solid fa-star ${i < rev.rating ? 'text-amber-400' : 'text-slate-200'}"></i>`
+                ).join('');
+
+                const dateStr = rev.timestamp ? new Date(rev.timestamp).toLocaleDateString() : 'Recently';
+
+                return `
+                    <div class="bg-white border border-choco-100 p-4 rounded-2xl card-shadow space-y-2 relative">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="font-bold text-choco-900 text-xs">${rev.name}</div>
+                                <div class="flex gap-1 text-xs mt-0.5">${starHtml}</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-400">${dateStr}</span>
+                                ${window.appState.isAdmin ? `
+                                    <button onclick="handleDeleteReview('${rev.id}')" title="Admin Delete" class="text-rose-400 hover:text-rose-600 p-1 transition">
+                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-700 leading-relaxed">${rev.comment}</p>
+
+                        ${rev.photo ? `
+                            <div class="mt-2">
+                                <img src="${rev.photo}" onclick="openLightbox('${rev.photo}')" 
+                                    class="w-20 h-20 object-cover rounded-xl border border-choco-100 shadow-sm cursor-pointer hover:opacity-90 transition">
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.openLightbox = function(imgSrc) {
+            document.getElementById('lightboxImg').src = imgSrc;
+            document.getElementById('lightboxModal').classList.remove('hidden');
+        };
+
+        window.closeLightbox = function() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+        };
+
+        window.copyAccountNumber = function() {
+            const accNum = document.getElementById('payAccNum').innerText;
+            navigator.clipboard.writeText(accNum).then(() => {
+                showToast('Account number copied to clipboard!', 'success');
+            }).catch(() => {
+                // Fallback execCommand
+                const el = document.createElement('textarea');
+                el.value = accNum;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showToast('Account number copied!', 'success');
+            });
+        };
+
+        window.handleQrUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 500;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height *= maxDim / width;
+                            width = maxDim;
+                        } else {
+                            width *= maxDim / height;
+                            height = maxDim;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+                    window.appState.qrPhotoBase64 = compressedBase64;
+
+                    document.getElementById('setQrPreviewImg').src = compressedBase64;
+                    document.getElementById('qrPreviewWrapper').classList.remove('hidden');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.handleSaveQrSettings = async function() {
+            const bankName = document.getElementById('setBankName').value.trim() || 'Maybank';
+            const accHolder = document.getElementById('setAccHolder').value.trim() || 'KekBatikLab';
+            const accNum = document.getElementById('setAccNum').value.trim() || '5648 1234 9901';
+            const qrUrl = window.appState.qrPhotoBase64 || window.appState.settings.qrUrl;
+
+            const newSettings = {
+                bankName,
+                accHolder,
+                accNum,
+                qrUrl
+            };
+
+            try {
+                await setDoc(getDocPath('settings', 'qr_config'), newSettings);
+                showToast('QR & Payment Settings updated!', 'success');
+            } catch (err) {
+                window.appState.settings = newSettings;
+                showToast('Settings saved (Local)!', 'success');
+            }
+
+            renderSettingsAndPayment();
+        };
+
+        function renderSettingsAndPayment() {
+            const s = window.appState.settings;
+
+            // Payment View Elements
+            document.getElementById('payBankName').innerText = s.bankName || 'Maybank';
+            document.getElementById('payAccHolder').innerText = s.accHolder || 'KekBatikLab';
+            document.getElementById('payAccNum').innerText = s.accNum || '5648 1234 9901';
+            if (s.qrUrl) document.getElementById('payQrImg').src = s.qrUrl;
+
+            // Settings Inputs
+            document.getElementById('setBankName').value = s.bankName || '';
+            document.getElementById('setAccHolder').value = s.accHolder || '';
+            document.getElementById('setAccNum').value = s.accNum || '';
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : 
+                           type === 'error' ? 'bg-rose-600 text-white' : 'bg-choco-800 text-amber-100';
+
+            const toast = document.createElement('div');
+            toast.className = `${bgClass} text-xs font-semibold px-4 py-3 rounded-2xl shadow-xl flex items-center gap-2 mb-2 transition transform translate-y-0 opacity-100`;
+            toast.innerHTML = `
+                <i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info'}"></i>
+                <span>${message}</span>
+            `;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function renderAllViews() {
+            renderIngredients();
+            renderSales();
+            renderReviews();
+            renderSettingsAndPayment();
+            updateCalculationsAndDashboard();
+        }
+
+        // Initialize on DOM load
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
 </body>
 </html>
