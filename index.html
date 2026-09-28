@@ -61,6 +61,59 @@
 
         .glass-header { background: rgba(107, 66, 38, 0.95); backdrop-filter: blur(10px); }
         .bottom-nav { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(12px); border-top: 1px solid #eee0d8; }
+
+        /* Admin uses a collapsible side navigation. Customer navigation stays at the bottom. */
+        .admin-sidebar {
+            position: fixed;
+            top: 72px;
+            bottom: 0;
+            left: max(0px, calc(50% - 14rem));
+            width: 58px;
+            background: rgba(84, 51, 29, 0.98);
+            border-right: 1px solid rgba(253, 248, 246, 0.12);
+            box-shadow: 8px 0 24px rgba(40, 23, 12, 0.16);
+            z-index: 40;
+            transition: width 220ms ease;
+            overflow: hidden;
+        }
+        .admin-sidebar.expanded { width: 188px; }
+        .admin-sidebar-label {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: opacity 160ms ease;
+        }
+        .admin-sidebar.expanded .admin-sidebar-label {
+            opacity: 1;
+            width: auto;
+        }
+        .admin-sidebar .admin-nav-btn {
+            width: calc(100% - 12px);
+            min-height: 42px;
+            margin: 0 6px;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            border-radius: 12px;
+            padding: 0 13px;
+            color: rgba(253, 248, 246, 0.68);
+            transition: background-color 160ms ease, color 160ms ease;
+        }
+        .admin-sidebar .admin-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff7ed;
+        }
+        .admin-sidebar .admin-nav-btn.side-active {
+            background: rgba(251, 191, 36, 0.18);
+            color: #fde68a;
+        }
+        .admin-main-offset { padding-left: 70px !important; }
+        @media (max-width: 380px) {
+            .admin-sidebar { width: 54px; }
+            .admin-main-offset { padding-left: 64px !important; padding-right: 10px !important; }
+            .admin-sidebar.expanded { width: 176px; }
+        }
         
         .active-tab { color: #6b4226; font-weight: 700; }
         .active-tab::after {
@@ -88,7 +141,7 @@
         </div>
     </div>
 
-    <div class="w-full max-w-md bg-cream min-h-screen relative flex flex-col shadow-2xl overflow-x-hidden pb-24">
+    <div id="appShell" class="w-full max-w-md bg-cream min-h-screen relative flex flex-col shadow-2xl overflow-x-hidden pb-24">
 
         <!-- Header Bar -->
         <header class="sticky top-0 z-30 glass-header text-white px-5 py-4 flex justify-between items-center shadow-md">
@@ -108,8 +161,19 @@
             </div>
         </header>
 
+        <!-- Collapsible Admin Side Navigation -->
+        <aside id="adminSidebar" class="admin-sidebar hidden" aria-label="Admin navigation">
+            <div class="h-full flex flex-col py-2">
+                <button onclick="toggleAdminSidebar()" class="admin-nav-btn mb-2 border-b border-white/10 rounded-none pb-2" title="Expand / collapse menu" aria-label="Expand or collapse admin menu">
+                    <i id="adminSidebarToggleIcon" class="fa-solid fa-angles-right w-4 text-center shrink-0"></i>
+                    <span class="admin-sidebar-label text-[10px] font-bold uppercase tracking-wider">Admin Menu</span>
+                </button>
+                <div id="adminSidebarContainer" class="space-y-1 overflow-y-auto flex-1"></div>
+            </div>
+        </aside>
+
         <!-- Main Scrollable Content Area -->
-        <main class="flex-1 px-4 py-5 space-y-5">
+        <main id="mainContent" class="flex-1 px-4 py-5 space-y-5">
 
             <!-- ================= DASHBOARD TAB ================= -->
             <section id="tab-dashboard" class="tab-content hidden space-y-5">
@@ -716,8 +780,8 @@
 
         </main>
 
-        <!-- Floating Bottom Navigation -->
-        <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bottom-nav px-1.5 py-2 z-30 shadow-2xl">
+        <!-- Customer Bottom Navigation (hidden while Admin is logged in) -->
+        <nav id="customerBottomNav" class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bottom-nav px-1.5 py-2 z-30 shadow-2xl">
             <div id="navContainer" class="flex justify-around items-center"></div>
         </nav>
     </div>
@@ -796,6 +860,7 @@
 
         window.appState = {
             isAdmin: false,
+            sidebarCollapsed: true,
             adminPassword: 'password123',
             activeTab: 'reviews',
             starRating: 5,
@@ -1031,10 +1096,21 @@
             if (tabName === 'orders') renderOrders();
         };
 
+        window.toggleAdminSidebar = function() {
+            if (!window.appState.isAdmin) return;
+            window.appState.sidebarCollapsed = !window.appState.sidebarCollapsed;
+            renderNavigation();
+        };
+
         window.renderNavigation = function() {
-            const container = document.getElementById('navContainer');
-            if (!container) return;
-            const tabs = window.appState.isAdmin ? [
+            const bottomContainer = document.getElementById('navContainer');
+            const bottomNav = document.getElementById('customerBottomNav');
+            const sidebar = document.getElementById('adminSidebar');
+            const sideContainer = document.getElementById('adminSidebarContainer');
+            const mainContent = document.getElementById('mainContent');
+            const shell = document.getElementById('appShell');
+
+            const adminTabs = [
                 { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
                 { id: 'ingredients', label: 'Ingredients', icon: 'fa-calculator' },
                 { id: 'sales', label: 'Sales', icon: 'fa-cash-register' },
@@ -1042,22 +1118,59 @@
                 { id: 'products', label: 'Products', icon: 'fa-box-open' },
                 { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
                 { id: 'qr-settings', label: 'Settings', icon: 'fa-gear' }
-            ] : [
+            ];
+            const customerTabs = [
                 { id: 'orders', label: 'Order', icon: 'fa-bag-shopping' },
                 { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
                 { id: 'pay', label: 'Pay & QR', icon: 'fa-qrcode' }
             ];
 
-            if (!window.appState.isAdmin && !['orders', 'reviews', 'pay'].includes(window.appState.activeTab)) {
-                window.appState.activeTab = 'reviews';
+            if (window.appState.isAdmin) {
+                if (bottomNav) bottomNav.classList.add('hidden');
+                if (sidebar) {
+                    sidebar.classList.remove('hidden');
+                    sidebar.classList.toggle('expanded', !window.appState.sidebarCollapsed);
+                }
+                if (mainContent) mainContent.classList.add('admin-main-offset');
+                if (shell) shell.classList.remove('pb-24');
+
+                const toggleIcon = document.getElementById('adminSidebarToggleIcon');
+                if (toggleIcon) {
+                    toggleIcon.className = `fa-solid ${window.appState.sidebarCollapsed ? 'fa-angles-right' : 'fa-angles-left'} w-4 text-center shrink-0`;
+                }
+
+                if (sideContainer) {
+                    sideContainer.innerHTML = adminTabs.map(tab => `
+                        <button onclick="switchTab('${tab.id}')" title="${escapeHtml(tab.label)}" class="admin-nav-btn ${window.appState.activeTab === tab.id ? 'side-active' : ''}">
+                            <i class="fa-solid ${tab.icon} w-4 text-center shrink-0"></i>
+                            <span class="admin-sidebar-label text-xs font-semibold">${escapeHtml(tab.label)}</span>
+                        </button>
+                    `).join('');
+                }
+                if (bottomContainer) bottomContainer.innerHTML = '';
+                return;
             }
 
-            container.innerHTML = tabs.map(tab => `
-                <button onclick="switchTab('${tab.id}')" class="relative flex flex-col items-center py-1 px-2 transition text-xs ${window.appState.activeTab === tab.id ? 'active-tab' : 'text-slate-400 hover:text-choco-700'}">
-                    <i class="fa-solid ${tab.icon} text-base mb-0.5"></i>
-                    <span class="text-[10px] tracking-tight font-medium">${tab.label}</span>
-                </button>
-            `).join('');
+            // Customer mode: normal three-button bottom navigation.
+            if (!['orders', 'reviews', 'pay'].includes(window.appState.activeTab)) {
+                window.appState.activeTab = 'reviews';
+            }
+            if (sidebar) {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('expanded');
+            }
+            if (mainContent) mainContent.classList.remove('admin-main-offset');
+            if (shell) shell.classList.add('pb-24');
+            if (bottomNav) bottomNav.classList.remove('hidden');
+
+            if (bottomContainer) {
+                bottomContainer.innerHTML = customerTabs.map(tab => `
+                    <button onclick="switchTab('${tab.id}')" class="relative flex flex-col items-center py-1 px-2 transition text-xs ${window.appState.activeTab === tab.id ? 'active-tab' : 'text-slate-400 hover:text-choco-700'}">
+                        <i class="fa-solid ${tab.icon} text-base mb-0.5"></i>
+                        <span class="text-[10px] tracking-tight font-medium">${escapeHtml(tab.label)}</span>
+                    </button>
+                `).join('');
+            }
         };
 
         window.openLoginModal = function() {
