@@ -1,0 +1,10 @@
+{
+  "kekBatikLabApp": {
+    "admin_push_devices": {
+      "$uid": {
+        ".read": false,
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    }
+  }
+}
