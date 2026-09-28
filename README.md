@@ -29,3 +29,13 @@ For anonymous sign-in and web push, enable Anonymous Authentication and create a
 
 ## Reverted UI
 The app UI has been restored to the original KekBatikLab design. Push notification backend improvements are retained.
+
+## Product order schedule
+
+Admin > Orders > Order Capacity Settings > Product Order Schedule lets each product use one of three modes:
+
+- **Every day** — the product can be ordered on any valid working day.
+- **Specific days** — add one or more dates; customers can order that product only on those dates.
+- **Closed** — the product stays unavailable until it is manually reopened.
+
+The customer product selector updates automatically when the selected order date changes. Dates with no available products are blocked in the customer order calendar.
