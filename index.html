@@ -378,6 +378,105 @@
             </section>
 
 
+            <!-- ================= CUSTOMER ORDERS TAB ================= -->
+            <section id="tab-orders" class="tab-content hidden space-y-4">
+                <div class="bg-gradient-to-r from-choco-800 to-choco-900 text-amber-100 p-4 rounded-2xl shadow-lg border border-choco-700 space-y-3">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <div class="text-[10px] uppercase tracking-wider text-amber-200/70 font-bold">Order Availability</div>
+                            <div id="orderCapacityText" class="text-lg font-bold mt-0.5">Checking...</div>
+                            <div id="orderCapacityHint" class="text-[11px] text-amber-200/70 mt-1">Select an order date.</div>
+                        </div>
+                        <div id="orderCapacityBadge" class="bg-white/10 border border-amber-200/20 px-2.5 py-1 rounded-full text-[10px] font-bold">Open</div>
+                    </div>
+                    <div class="h-2 rounded-full bg-white/10 overflow-hidden">
+                        <div id="orderCapacityBar" class="h-full bg-amber-300 rounded-full transition-all duration-300" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div id="orderAdminLimitCard" class="hidden bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
+                    <div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-choco-900 flex items-center gap-1.5"><i class="fa-solid fa-gauge-high text-choco-600"></i> Daily Order Limit</h3>
+                        <p class="text-[10px] text-slate-500 mt-1">Maximum total boxes that can be accepted for one order date. Use 0 for unlimited.</p>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <div class="flex-1">
+                            <label class="text-[11px] font-semibold text-slate-600">Max Boxes / Day</label>
+                            <input type="number" id="dailyOrderLimitInput" value="0" min="0" step="1" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                        </div>
+                        <button onclick="handleSaveDailyOrderLimit()" class="bg-choco-700 hover:bg-choco-800 text-white font-semibold px-4 py-2.5 rounded-xl text-xs transition shadow-md"><i class="fa-solid fa-floppy-disk mr-1"></i>Save</button>
+                    </div>
+                </div>
+
+                <div id="orderAdminSummary" class="hidden grid grid-cols-2 gap-2.5">
+                    <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-2xl card-shadow">
+                        <div class="text-[9px] uppercase font-bold tracking-wider text-amber-800">Pending Orders</div>
+                        <div id="ordersPendingCount" class="text-lg font-extrabold text-amber-700 mt-0.5">0</div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200/80 p-3 rounded-2xl card-shadow">
+                        <div class="text-[9px] uppercase font-bold tracking-wider text-emerald-800">Completed</div>
+                        <div id="ordersCompletedCount" class="text-lg font-extrabold text-emerald-700 mt-0.5">0</div>
+                    </div>
+                </div>
+
+                <div id="orderFormCard" class="bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h2 id="orderFormTitle" class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-bag-shopping text-choco-600"></i> Place Order
+                            </h2>
+                            <p id="orderFormSubtitle" class="text-[10px] text-slate-500 mt-0.5">Choose your product, quantity and date.</p>
+                        </div>
+                        <span id="orderEditBadge" class="hidden text-[9px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-full">Editing</span>
+                    </div>
+                    <input type="hidden" id="orderEditId" value="">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Product</label>
+                            <select id="orderProduct" onchange="renderOrderCapacity()" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold"></select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Quantity (Boxes)</label>
+                                <input type="number" id="orderQty" value="1" min="1" oninput="renderOrderCapacity()" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Order Date</label>
+                                <input type="date" id="orderDate" onchange="renderOrderCapacity()" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Customer Name / Note</label>
+                            <input type="text" id="orderCustomer" placeholder="e.g. Aina" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        </div>
+                        <div id="orderStatusField" class="hidden">
+                            <label class="text-[11px] font-semibold text-slate-600">Status</label>
+                            <select id="orderStatus" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                                <option value="Pending">Pending</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button id="orderSaveBtn" onclick="handleSaveOrder()" class="w-full bg-choco-700 hover:bg-choco-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-bag-shopping"></i> Place Order
+                            </button>
+                            <button id="orderCancelBtn" onclick="cancelOrderEdit()" class="hidden w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition border border-slate-200 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-xmark"></i> Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="orderAdminListCard" class="hidden bg-white border border-choco-200 rounded-2xl overflow-hidden card-shadow">
+                    <div class="p-3 bg-choco-50/80 border-b border-choco-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-choco-900">Order List</span>
+                        <span id="ordersCountBadge" class="text-[10px] text-choco-600 bg-white border border-choco-200 px-2 py-0.5 rounded-full font-semibold">0 Orders</span>
+                    </div>
+                    <div id="ordersList" class="divide-y divide-slate-100 text-xs"></div>
+                </div>
+            </section>
+
+
             <!-- ================= REVIEWS & FEEDBACK TAB ================= -->
             <section id="tab-reviews" class="tab-content space-y-4">
                 <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
@@ -671,7 +770,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, set, push, remove, onValue } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, set, push, remove, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyApCM07s1Malsb2XACOR5qNXooaXLkW-dc",
@@ -705,6 +804,7 @@
             yieldCount: 10,
             ingredients: [],
             sales: [],
+            orders: [],
             reviews: [],
             products: DEFAULT_PRODUCTS.map(p => ({ ...p })),
             filters: {
@@ -722,7 +822,8 @@
                 accHolder: 'MUHAMMAD FAIZ',
                 accNum: '123',
                 qrUrl: 'https://placehold.co/300x300/6b4226/ffffff?text=DuitNow+QR',
-                whatsappNumber: ''
+                whatsappNumber: '',
+                dailyOrderLimit: 0
             }
         };
 
@@ -782,6 +883,7 @@
             setSelectOptions('dashboardProductFilter', window.appState.filters.dashboardProduct, true);
             setSelectOptions('ingredientProductFilter', window.appState.filters.ingredientProduct, true);
             setSelectOptions('salesProductFilter', window.appState.filters.salesProduct, true);
+            setSelectOptions('orderProduct', document.getElementById('orderProduct')?.value || window.appState.products[0]?.id || 'kek-batik', false);
             setSelectOptions('reviewProductSelect', window.appState.products[0]?.id || 'kek-batik', false);
             setSelectOptions('reviewProductFilter', window.appState.filters.reviewProduct, true);
 
@@ -820,6 +922,8 @@
 
             const saleDateInput = document.getElementById('saleDate');
             if (saleDateInput) saleDateInput.value = localDateStr();
+            const orderDateInput = document.getElementById('orderDate');
+            if (orderDateInput) orderDateInput.value = localDateStr();
 
             setupDatabaseListeners();
             renderNavigation();
@@ -850,6 +954,7 @@
                 renderMonthFilter();
                 renderIngredients();
                 renderSales();
+                renderOrders();
                 renderReviews();
                 updateCalculationsAndDashboard();
             });
@@ -868,6 +973,22 @@
                 renderSalesMonthFilter();
                 renderSales();
                 updateCalculationsAndDashboard();
+            });
+
+            onValue(getDbRef('orders'), (snapshot) => {
+                const data = snapshot.val();
+                window.appState.orders = data ? Object.keys(data).map(key => ({ id: key, ...data[key], productId: data[key].productId || 'kek-batik' })) : [];
+                renderOrders();
+                renderOrderCapacity();
+            });
+
+            onValue(getDbRef('settings/order_config'), (snapshot) => {
+                const data = snapshot.val();
+                window.appState.settings.dailyOrderLimit = Math.max(0, Number(data?.dailyLimit || 0));
+                const input = document.getElementById('dailyOrderLimitInput');
+                if (input) input.value = String(window.appState.settings.dailyOrderLimit);
+                renderOrders();
+                renderOrderCapacity();
             });
 
             onValue(getDbRef('reviews'), (snapshot) => {
@@ -907,6 +1028,7 @@
             renderNavigation();
             if (tabName === 'dashboard') setTimeout(renderProfitChart, 80);
             if (tabName === 'sales') { renderSalesMonthFilter(); renderSales(); }
+            if (tabName === 'orders') renderOrders();
         };
 
         window.renderNavigation = function() {
@@ -916,15 +1038,17 @@
                 { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
                 { id: 'ingredients', label: 'Ingredients', icon: 'fa-calculator' },
                 { id: 'sales', label: 'Sales', icon: 'fa-cash-register' },
+                { id: 'orders', label: 'Orders', icon: 'fa-clipboard-list' },
                 { id: 'products', label: 'Products', icon: 'fa-box-open' },
                 { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
                 { id: 'qr-settings', label: 'Settings', icon: 'fa-gear' }
             ] : [
+                { id: 'orders', label: 'Order', icon: 'fa-bag-shopping' },
                 { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
                 { id: 'pay', label: 'Pay & QR', icon: 'fa-qrcode' }
             ];
 
-            if (!window.appState.isAdmin && !['reviews', 'pay'].includes(window.appState.activeTab)) {
+            if (!window.appState.isAdmin && !['orders', 'reviews', 'pay'].includes(window.appState.activeTab)) {
                 window.appState.activeTab = 'reviews';
             }
 
@@ -979,6 +1103,8 @@
             }
             renderNavigation();
             renderReviews();
+            resetOrderForm();
+            renderOrders();
         }
 
         window.handleUpdatePassword = async function() {
@@ -1487,6 +1613,253 @@
             }).join('');
         }
 
+        // ================= CUSTOMER ORDERS =================
+        function getDailyOrderLimit() {
+            return Math.max(0, Number(window.appState.settings.dailyOrderLimit || 0));
+        }
+
+        function getBookedBoxes(date, excludeId = '') {
+            return window.appState.orders
+                .filter(o => o.id !== excludeId && String(o.date || '') === String(date || ''))
+                .reduce((sum, o) => sum + Math.max(0, Number(o.qty || 0)), 0);
+        }
+
+        window.renderOrderCapacity = function() {
+            const date = document.getElementById('orderDate')?.value || localDateStr();
+            const editId = document.getElementById('orderEditId')?.value || '';
+            const qty = Math.max(1, parseInt(document.getElementById('orderQty')?.value || '1') || 1);
+            const limit = getDailyOrderLimit();
+            const booked = getBookedBoxes(date);
+            const bookedExcludingEdit = getBookedBoxes(date, editId);
+            const availableForForm = limit > 0 ? Math.max(0, limit - bookedExcludingEdit) : Infinity;
+            const remaining = limit > 0 ? Math.max(0, limit - booked) : Infinity;
+
+            const textEl = document.getElementById('orderCapacityText');
+            const hintEl = document.getElementById('orderCapacityHint');
+            const badgeEl = document.getElementById('orderCapacityBadge');
+            const barEl = document.getElementById('orderCapacityBar');
+            const saveBtn = document.getElementById('orderSaveBtn');
+
+            if (limit <= 0) {
+                if (textEl) textEl.innerText = `${booked} box(es) booked`;
+                if (hintEl) hintEl.innerText = `${date} · No daily limit set`;
+                if (badgeEl) { badgeEl.innerText = 'Open'; badgeEl.className = 'bg-white/10 border border-amber-200/20 px-2.5 py-1 rounded-full text-[10px] font-bold'; }
+                if (barEl) barEl.style.width = '0%';
+                if (saveBtn) saveBtn.disabled = false;
+                return;
+            }
+
+            const pct = Math.min(100, Math.round((booked / limit) * 100));
+            if (textEl) textEl.innerText = `${booked} / ${limit} boxes booked`;
+            if (hintEl) hintEl.innerText = remaining > 0 ? `${remaining} box(es) still available for ${date}` : `${date} is fully booked`;
+            if (barEl) barEl.style.width = `${pct}%`;
+            if (badgeEl) {
+                badgeEl.innerText = remaining > 0 ? `${remaining} left` : 'Full';
+                badgeEl.className = remaining > 0
+                    ? 'bg-white/10 border border-amber-200/20 px-2.5 py-1 rounded-full text-[10px] font-bold'
+                    : 'bg-rose-500/20 border border-rose-300/30 text-rose-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
+            }
+            if (saveBtn) saveBtn.disabled = qty > availableForForm;
+        };
+
+        window.handleSaveDailyOrderLimit = async function() {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const input = document.getElementById('dailyOrderLimitInput');
+            const limit = Math.max(0, parseInt(input?.value || '0') || 0);
+            try {
+                await set(getDbRef('settings/order_config'), { dailyLimit: limit, updatedAt: Date.now() });
+                showToast(limit > 0 ? `Daily order limit set to ${limit} boxes.` : 'Daily order limit removed.', 'success');
+            } catch (err) {
+                showToast('Failed to save daily order limit.', 'error');
+            }
+        };
+
+        function updateOrderModeUi() {
+            const isAdmin = window.appState.isAdmin;
+            document.getElementById('orderAdminLimitCard')?.classList.toggle('hidden', !isAdmin);
+            document.getElementById('orderAdminSummary')?.classList.toggle('hidden', !isAdmin);
+            document.getElementById('orderAdminListCard')?.classList.toggle('hidden', !isAdmin);
+            document.getElementById('orderStatusField')?.classList.toggle('hidden', !isAdmin);
+            const input = document.getElementById('dailyOrderLimitInput');
+            if (input) input.value = String(getDailyOrderLimit());
+        }
+
+        function resetOrderForm() {
+            const editId = document.getElementById('orderEditId');
+            if (editId) editId.value = '';
+            const qty = document.getElementById('orderQty'); if (qty) qty.value = '1';
+            const date = document.getElementById('orderDate'); if (date) { date.value = localDateStr(); date.min = window.appState.isAdmin ? '' : localDateStr(); }
+            const customer = document.getElementById('orderCustomer'); if (customer) customer.value = '';
+            const status = document.getElementById('orderStatus'); if (status) status.value = 'Pending';
+            const firstProduct = window.appState.products.find(p => p.active !== false)?.id || window.appState.products[0]?.id || 'kek-batik';
+            const product = document.getElementById('orderProduct'); if (product) product.value = firstProduct;
+            const title = document.getElementById('orderFormTitle');
+            if (title) title.innerHTML = window.appState.isAdmin
+                ? '<i class="fa-solid fa-clipboard-list text-choco-600"></i> Add Order'
+                : '<i class="fa-solid fa-bag-shopping text-choco-600"></i> Place Order';
+            const subtitle = document.getElementById('orderFormSubtitle');
+            if (subtitle) subtitle.innerText = window.appState.isAdmin ? 'Create or manage a customer order.' : 'Choose your product, quantity and date.';
+            const badge = document.getElementById('orderEditBadge'); if (badge) badge.classList.add('hidden');
+            const save = document.getElementById('orderSaveBtn');
+            if (save) save.innerHTML = window.appState.isAdmin
+                ? '<i class="fa-solid fa-plus"></i> Add Order'
+                : '<i class="fa-solid fa-bag-shopping"></i> Place Order';
+            const cancel = document.getElementById('orderCancelBtn'); if (cancel) cancel.classList.add('hidden');
+            updateOrderModeUi();
+            renderOrderCapacity();
+        }
+
+        window.cancelOrderEdit = function() {
+            resetOrderForm();
+            showToast('Order edit cancelled.', 'info');
+        };
+
+        window.handleEditOrder = function(id) {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const order = window.appState.orders.find(o => o.id === id);
+            if (!order) return;
+            document.getElementById('orderEditId').value = order.id;
+            document.getElementById('orderProduct').value = order.productId || 'kek-batik';
+            document.getElementById('orderQty').value = Math.max(1, Number(order.qty || 1));
+            const dateEl = document.getElementById('orderDate');
+            dateEl.value = order.date || localDateStr();
+            dateEl.min = '';
+            document.getElementById('orderCustomer').value = order.customer || '';
+            document.getElementById('orderStatus').value = order.status || 'Pending';
+            document.getElementById('orderFormTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-choco-600"></i> Edit Order';
+            document.getElementById('orderFormSubtitle').innerText = order.orderNo || 'Edit customer order';
+            document.getElementById('orderEditBadge').classList.remove('hidden');
+            document.getElementById('orderSaveBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+            document.getElementById('orderCancelBtn').classList.remove('hidden');
+            renderOrderCapacity();
+            document.getElementById('orderFormCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        window.handleSaveOrder = async function() {
+            const isAdmin = window.appState.isAdmin;
+            const productId = document.getElementById('orderProduct').value || 'kek-batik';
+            const qty = parseInt(document.getElementById('orderQty').value);
+            const date = document.getElementById('orderDate').value || localDateStr();
+            const customer = document.getElementById('orderCustomer').value.trim();
+            const editId = isAdmin ? document.getElementById('orderEditId').value.trim() : '';
+            const status = isAdmin ? (document.getElementById('orderStatus').value || 'Pending') : 'Pending';
+            if (!Number.isFinite(qty) || qty < 1) return showToast('Quantity must be at least 1.', 'error');
+            if (!isAdmin && !customer) return showToast('Please enter your name.', 'error');
+            if (!isAdmin && date < localDateStr()) return showToast('Please choose today or a future date.', 'error');
+
+            const existing = editId ? window.appState.orders.find(o => o.id === editId) : null;
+            if (editId && !existing) return showToast('Order not found.', 'error');
+            const orderNo = existing?.orderNo || `ORD-${date.replace(/-/g, '')}-${String(Date.now()).slice(-5)}`;
+            const record = {
+                ...(existing || {}),
+                orderNo,
+                productId,
+                qty,
+                date,
+                customer,
+                status,
+                source: existing?.source || (isAdmin ? 'Admin' : 'Customer'),
+                timestamp: existing?.timestamp || Date.now(),
+                updatedAt: Date.now()
+            };
+
+            const limit = getDailyOrderLimit();
+            const newKey = editId || push(getDbRef('orders')).key;
+            let blockedRemaining = 0;
+            try {
+                const result = await runTransaction(getDbRef('orders'), (current) => {
+                    const orders = current || {};
+                    let used = 0;
+                    Object.entries(orders).forEach(([key, order]) => {
+                        if (key !== editId && String(order?.date || '') === date) used += Math.max(0, Number(order?.qty || 0));
+                    });
+                    blockedRemaining = limit > 0 ? Math.max(0, limit - used) : Infinity;
+                    if (limit > 0 && used + qty > limit) return;
+                    orders[newKey] = record;
+                    return orders;
+                });
+
+                if (!result.committed) {
+                    showToast(blockedRemaining > 0 ? `Only ${blockedRemaining} box(es) are available for ${date}.` : `${date} is fully booked.`, 'error');
+                    renderOrderCapacity();
+                    return;
+                }
+
+                if (editId) showToast(`${orderNo} updated.`, 'success');
+                else showToast(isAdmin ? `${orderNo} added.` : `Order received! ${orderNo}`, 'success');
+                resetOrderForm();
+            } catch (err) {
+                showToast(editId ? 'Failed to update order.' : 'Failed to place order.', 'error');
+            }
+        };
+
+        window.handleQuickCompleteOrder = async function(id) {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const order = window.appState.orders.find(o => o.id === id);
+            if (!order) return;
+            try {
+                await set(getDbRef(`orders/${id}`), { ...order, status: 'Completed', updatedAt: Date.now() });
+                showToast(`${order.orderNo || 'Order'} completed.`, 'success');
+            } catch (err) { showToast('Failed to update order.', 'error'); }
+        };
+
+        window.handleDeleteOrder = async function(id) {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const order = window.appState.orders.find(o => o.id === id);
+            if (!order) return;
+            if (!confirm(`Delete ${order.orderNo || 'this order'}?`)) return;
+            try {
+                await remove(getDbRef(`orders/${id}`));
+                if (document.getElementById('orderEditId')?.value === id) resetOrderForm();
+                showToast('Order deleted.', 'info');
+            } catch (err) { showToast('Failed to delete order.', 'error'); }
+        };
+
+        function renderOrders() {
+            updateOrderModeUi();
+            const list = document.getElementById('ordersList');
+            const orders = [...window.appState.orders].sort((a, b) => {
+                const dateDiff = new Date(b.date || 0) - new Date(a.date || 0);
+                return dateDiff || Number(b.timestamp || 0) - Number(a.timestamp || 0);
+            });
+            const pending = orders.filter(o => (o.status || 'Pending') === 'Pending').length;
+            const completed = orders.filter(o => o.status === 'Completed').length;
+            const pendingEl = document.getElementById('ordersPendingCount'); if (pendingEl) pendingEl.innerText = String(pending);
+            const completedEl = document.getElementById('ordersCompletedCount'); if (completedEl) completedEl.innerText = String(completed);
+            const badge = document.getElementById('ordersCountBadge'); if (badge) badge.innerText = `${orders.length} Orders`;
+            renderOrderCapacity();
+
+            if (!list || !window.appState.isAdmin) return;
+            if (!orders.length) {
+                list.innerHTML = '<div class="p-5 text-center text-slate-400 italic">No orders yet.</div>';
+                return;
+            }
+
+            list.innerHTML = orders.map(order => {
+                const status = order.status || 'Pending';
+                const statusClass = status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200';
+                return `
+                <div class="p-3.5 hover:bg-slate-50 transition space-y-2">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="font-mono text-[9px] text-slate-400">${escapeHtml(order.orderNo || 'Order')}</span>
+                                <span class="inline-flex items-center text-[9px] font-bold border rounded-full px-1.5 py-0.5 ${statusClass}">${escapeHtml(status)}</span>
+                                ${order.source ? `<span class="text-[9px] text-slate-400">${escapeHtml(order.source)}</span>` : ''}
+                            </div>
+                            <div class="font-bold text-choco-900 mt-1"><i class="fa-solid ${escapeHtml(getProductIcon(order.productId))} text-choco-500 mr-1"></i>${escapeHtml(getProductName(order.productId))} × ${Number(order.qty || 1)}</div>
+                            <div class="text-[10px] text-slate-500 mt-1">${escapeHtml(order.date || '')}${order.customer ? ' · ' + escapeHtml(order.customer) : ''}</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 border-t border-slate-100 pt-2">
+                        ${status !== 'Completed' ? `<button onclick="handleQuickCompleteOrder('${order.id}')" class="text-[10px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-check mr-1"></i>Complete</button>` : ''}
+                        <button onclick="handleEditOrder('${order.id}')" class="text-[10px] font-bold text-choco-700 bg-choco-50 hover:bg-choco-100 border border-choco-100 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>
+                        <button onclick="handleDeleteOrder('${order.id}')" class="text-[10px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash-can mr-1"></i>Delete</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
         // ================= DASHBOARD =================
         function getDashboardSales() {
             const product = window.appState.filters.dashboardProduct;
@@ -1767,6 +2140,8 @@
             renderProducts();
             renderIngredients();
             renderSales();
+            renderOrders();
+            renderOrderCapacity();
             renderReviews();
             renderSettingsAndPayment();
             updateCalculationsAndDashboard();
