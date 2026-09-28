@@ -258,10 +258,60 @@
 
             <!-- ================= SALES LOGGER TAB ================= -->
             <section id="tab-sales" class="tab-content hidden space-y-4">
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-2xl card-shadow">
+                        <div class="text-[9px] uppercase font-bold tracking-wider text-amber-800">Revenue</div>
+                        <div id="salesSummaryRevenue" class="text-base font-extrabold text-amber-700 mt-0.5">RM 0.00</div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-200/80 p-3 rounded-2xl card-shadow">
+                        <div class="text-[9px] uppercase font-bold tracking-wider text-emerald-800">Profit</div>
+                        <div id="salesSummaryProfit" class="text-base font-extrabold text-emerald-700 mt-0.5">RM 0.00</div>
+                    </div>
+                    <div class="bg-choco-50 border border-choco-200 p-3 rounded-2xl card-shadow">
+                        <div class="text-[9px] uppercase font-bold tracking-wider text-choco-800">Boxes Sold</div>
+                        <div id="salesSummaryBoxes" class="text-base font-extrabold text-choco-800 mt-0.5">0</div>
+                    </div>
+                    <div class="bg-rose-50 border border-rose-200/80 p-3 rounded-2xl card-shadow">
+                        <div class="text-[9px] uppercase font-bold tracking-wider text-rose-800">Pending Payment</div>
+                        <div id="salesSummaryPending" class="text-base font-extrabold text-rose-700 mt-0.5">RM 0.00</div>
+                    </div>
+                </div>
+
                 <div class="bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
-                    <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
-                        <i class="fa-solid fa-cash-register text-choco-600"></i> Record New Sale
-                    </h2>
+                    <div class="flex items-center justify-between gap-2">
+                        <div>
+                            <div class="text-[10px] uppercase font-bold tracking-wider text-slate-500">Sales History Filters</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">Filter records before editing or exporting.</div>
+                        </div>
+                        <button onclick="resetSalesFilters()" class="text-[10px] font-bold text-choco-700 bg-choco-50 border border-choco-200 px-2.5 py-1.5 rounded-lg hover:bg-choco-100 transition">
+                            <i class="fa-solid fa-rotate-left mr-1"></i>Reset
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <select id="salesProductFilter" onchange="applySalesFilter()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold bg-slate-50/50 focus:ring-2 focus:ring-choco-600 focus:outline-none"></select>
+                        <select id="salesMonthFilter" onchange="applySalesFilter()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold bg-slate-50/50 focus:ring-2 focus:ring-choco-600 focus:outline-none"></select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <select id="salesStatusFilter" onchange="applySalesFilter()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold bg-slate-50/50 focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                            <option value="all">All Payment Status</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Pending">Pending</option>
+                        </select>
+                        <input id="salesSearchInput" type="search" oninput="applySalesFilter()" placeholder="Search customer / notes..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50/50 focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                    </div>
+                    <button onclick="exportSalesCsv()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-sm flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-file-csv"></i> Export Filtered Sales CSV
+                    </button>
+                </div>
+
+                <div id="saleFormCard" class="bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <h2 id="saleFormTitle" class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-cash-register text-choco-600"></i> Record New Sale
+                        </h2>
+                        <span id="saleEditBadge" class="hidden text-[9px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-full">Editing</span>
+                    </div>
+                    <input type="hidden" id="saleEditId" value="">
                     <div class="space-y-3">
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600">Product</label>
@@ -275,7 +325,7 @@
                             </div>
                             <div>
                                 <label class="text-[11px] font-semibold text-slate-600">Price / Box (RM)</label>
-                                <input type="number" id="salePrice" value="15.00" step="0.5"
+                                <input type="number" id="salePrice" value="15.00" step="0.01" min="0"
                                     class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
                             </div>
                         </div>
@@ -284,14 +334,37 @@
                             <input type="date" id="saleDate"
                                 class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                         </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Payment Method</label>
+                                <select id="salePaymentMethod" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                                    <option value="Cash">Cash</option>
+                                    <option value="DuitNow / Transfer">DuitNow / Transfer</option>
+                                    <option value="COD">COD</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[11px] font-semibold text-slate-600">Payment Status</label>
+                                <select id="salePaymentStatus" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                                    <option value="Paid">Paid</option>
+                                    <option value="Pending">Pending</option>
+                                </select>
+                            </div>
+                        </div>
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600">Customer / Notes (Optional)</label>
                             <input type="text" id="saleNotes" placeholder="e.g. COD Bangi, Special order"
                                 class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                         </div>
-                        <button onclick="handleLogSale()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-check"></i> Record Sale
-                        </button>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button id="saleSaveBtn" onclick="handleLogSale()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-check"></i> Record Sale
+                            </button>
+                            <button id="saleCancelEditBtn" onclick="cancelSaleEdit()" class="hidden w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition border border-slate-200 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-xmark"></i> Cancel Edit
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -638,7 +711,10 @@
                 dashboardProduct: 'all',
                 dashboardMonth: 'all',
                 ingredientProduct: 'kek-batik',
-                salesProduct: 'kek-batik',
+                salesProduct: 'all',
+                salesMonth: 'all',
+                salesStatus: 'all',
+                salesSearch: '',
                 reviewProduct: 'all'
             },
             settings: {
@@ -789,6 +865,7 @@
                 const data = snapshot.val();
                 window.appState.sales = data ? Object.keys(data).map(key => ({ id: key, ...data[key], productId: data[key].productId || 'kek-batik' })) : [];
                 renderMonthFilter();
+                renderSalesMonthFilter();
                 renderSales();
                 updateCalculationsAndDashboard();
             });
@@ -829,6 +906,7 @@
             if (target) target.classList.remove('hidden');
             renderNavigation();
             if (tabName === 'dashboard') setTimeout(renderProfitChart, 80);
+            if (tabName === 'sales') { renderSalesMonthFilter(); renderSales(); }
         };
 
         window.renderNavigation = function() {
@@ -1051,12 +1129,21 @@
         };
         window.applySalesFilter = function() {
             window.appState.filters.salesProduct = document.getElementById('salesProductFilter')?.value || 'all';
-            const p = getProduct(window.appState.filters.salesProduct);
-            const select = document.getElementById('saleProduct');
-            if (select && window.appState.filters.salesProduct !== 'all' && p) {
-                select.value = p.id;
-                syncSalePriceToProduct();
-            }
+            window.appState.filters.salesMonth = document.getElementById('salesMonthFilter')?.value || 'all';
+            window.appState.filters.salesStatus = document.getElementById('salesStatusFilter')?.value || 'all';
+            window.appState.filters.salesSearch = document.getElementById('salesSearchInput')?.value.trim().toLowerCase() || '';
+            renderSales();
+        };
+
+        window.resetSalesFilters = function() {
+            window.appState.filters.salesProduct = 'all';
+            window.appState.filters.salesMonth = 'all';
+            window.appState.filters.salesStatus = 'all';
+            window.appState.filters.salesSearch = '';
+            const product = document.getElementById('salesProductFilter'); if (product) product.value = 'all';
+            const month = document.getElementById('salesMonthFilter'); if (month) month.value = 'all';
+            const status = document.getElementById('salesStatusFilter'); if (status) status.value = 'all';
+            const search = document.getElementById('salesSearchInput'); if (search) search.value = '';
             renderSales();
         };
         window.applyReviewFilter = function() {
@@ -1184,66 +1271,220 @@
         }
 
         // ================= SALES =================
+        function renderSalesMonthFilter() {
+            const el = document.getElementById('salesMonthFilter');
+            if (!el) return;
+            const months = new Set();
+            window.appState.sales.forEach(sale => {
+                if (sale.date && /^\d{4}-\d{2}/.test(sale.date)) months.add(sale.date.slice(0, 7));
+            });
+            const sorted = [...months].sort().reverse();
+            el.innerHTML = '<option value="all">All Months</option>' + sorted.map(m => {
+                const [year, month] = m.split('-');
+                const label = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+                return `<option value="${m}">${label}</option>`;
+            }).join('');
+            el.value = sorted.includes(window.appState.filters.salesMonth) ? window.appState.filters.salesMonth : 'all';
+            if (el.value === 'all') window.appState.filters.salesMonth = 'all';
+        }
+
         window.syncSalePriceToProduct = function() {
             const select = document.getElementById('saleProduct');
             const priceInput = document.getElementById('salePrice');
             if (!select || !priceInput) return;
             const product = getProduct(select.value);
-            if (product && Number(product.defaultPrice) > 0) priceInput.value = Number(product.defaultPrice).toFixed(2);
+            if (product && Number(product.defaultPrice) >= 0) priceInput.value = Number(product.defaultPrice).toFixed(2);
+        };
+
+        function resetSaleForm() {
+            const editId = document.getElementById('saleEditId'); if (editId) editId.value = '';
+            const qty = document.getElementById('saleQty'); if (qty) qty.value = '1';
+            const date = document.getElementById('saleDate'); if (date) date.value = localDateStr();
+            const notes = document.getElementById('saleNotes'); if (notes) notes.value = '';
+            const method = document.getElementById('salePaymentMethod'); if (method) method.value = 'Cash';
+            const status = document.getElementById('salePaymentStatus'); if (status) status.value = 'Paid';
+            const title = document.getElementById('saleFormTitle');
+            if (title) title.innerHTML = '<i class="fa-solid fa-cash-register text-choco-600"></i> Record New Sale';
+            const badge = document.getElementById('saleEditBadge'); if (badge) badge.classList.add('hidden');
+            const saveBtn = document.getElementById('saleSaveBtn');
+            if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-check"></i> Record Sale';
+            const cancelBtn = document.getElementById('saleCancelEditBtn'); if (cancelBtn) cancelBtn.classList.add('hidden');
+            syncSalePriceToProduct();
+        }
+
+        window.cancelSaleEdit = function() {
+            resetSaleForm();
+            showToast('Sale edit cancelled.', 'info');
+        };
+
+        window.handleEditSale = function(id) {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const sale = window.appState.sales.find(s => s.id === id);
+            if (!sale) return showToast('Sale record not found.', 'error');
+            document.getElementById('saleEditId').value = sale.id;
+            document.getElementById('saleProduct').value = sale.productId || 'kek-batik';
+            document.getElementById('saleQty').value = Math.max(1, Number(sale.qty || 1));
+            document.getElementById('salePrice').value = Number(sale.price || 0).toFixed(2);
+            document.getElementById('saleDate').value = sale.date || localDateStr();
+            document.getElementById('saleNotes').value = sale.notes || '';
+            document.getElementById('salePaymentMethod').value = sale.paymentMethod || 'Cash';
+            document.getElementById('salePaymentStatus').value = sale.paymentStatus || 'Paid';
+            document.getElementById('saleFormTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-choco-600"></i> Edit Sale';
+            document.getElementById('saleEditBadge').classList.remove('hidden');
+            document.getElementById('saleSaveBtn').innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+            document.getElementById('saleCancelEditBtn').classList.remove('hidden');
+            document.getElementById('saleFormCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            showToast(`Editing ${sale.orderNo || 'sale record'}`, 'info');
         };
 
         window.handleLogSale = async function() {
-            const qty = parseInt(document.getElementById('saleQty').value) || 1;
-            const price = parseFloat(document.getElementById('salePrice').value) || 0;
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const qty = parseInt(document.getElementById('saleQty').value);
+            const price = parseFloat(document.getElementById('salePrice').value);
             const date = document.getElementById('saleDate').value || localDateStr();
             const notes = document.getElementById('saleNotes').value.trim();
             const productId = document.getElementById('saleProduct').value || 'kek-batik';
-            const costPerBox = calculateCostPerBox(productId);
+            const paymentMethod = document.getElementById('salePaymentMethod').value || 'Cash';
+            const paymentStatus = document.getElementById('salePaymentStatus').value || 'Paid';
+            const editId = document.getElementById('saleEditId').value.trim();
+            if (!Number.isFinite(qty) || qty < 1) return showToast('Quantity must be at least 1 box.', 'error');
+            if (!Number.isFinite(price) || price < 0) return showToast('Please enter a valid price.', 'error');
+
+            const existing = editId ? window.appState.sales.find(s => s.id === editId) : null;
+            const sameProduct = existing && (existing.productId || 'kek-batik') === productId;
+            const savedCost = Number(existing?.costPerBox);
+            const costPerBox = sameProduct && Number.isFinite(savedCost) ? savedCost : calculateCostPerBox(productId);
             const total = qty * price;
             const profit = total - (qty * costPerBox);
+            const orderNo = existing?.orderNo || `KB-${date.replace(/-/g, '')}-${String(Date.now()).slice(-5)}`;
+            const record = {
+                ...(existing || {}),
+                qty, price, total, costPerBox, profit, date, notes, productId,
+                paymentMethod, paymentStatus, orderNo,
+                timestamp: existing?.timestamp || Date.now(),
+                updatedAt: Date.now()
+            };
+
             try {
-                await set(push(getDbRef('sales')), { qty, price, total, costPerBox, profit, date, notes, productId, timestamp: Date.now() });
-                window.appState.filters.salesProduct = productId;
-                const filter = document.getElementById('salesProductFilter');
-                if (filter) filter.value = productId;
-                showToast(`${qty} ${getProductName(productId)} box(es) logged!`, 'success');
-                document.getElementById('saleNotes').value = '';
-            } catch (err) { showToast('Failed to log sale.', 'error'); }
+                if (editId) {
+                    await set(getDbRef(`sales/${editId}`), record);
+                    showToast(`${orderNo} updated successfully!`, 'success');
+                } else {
+                    await set(push(getDbRef('sales')), record);
+                    showToast(`${qty} ${getProductName(productId)} box(es) logged!`, 'success');
+                }
+                resetSaleForm();
+            } catch (err) {
+                showToast(editId ? 'Failed to update sale.' : 'Failed to log sale.', 'error');
+            }
         };
 
         window.handleDeleteSale = async function(id) {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const sale = window.appState.sales.find(s => s.id === id);
+            if (!sale) return;
+            if (!confirm(`Delete ${sale.orderNo || 'this sale'}? This cannot be undone.`)) return;
             try {
                 await remove(getDbRef(`sales/${id}`));
+                if (document.getElementById('saleEditId')?.value === id) resetSaleForm();
                 showToast('Sale entry removed.', 'info');
             } catch (err) { showToast('Failed to remove sale.', 'error'); }
+        };
+
+        function getFilteredSales() {
+            const { salesProduct, salesMonth, salesStatus, salesSearch } = window.appState.filters;
+            return window.appState.sales.filter(sale => {
+                const productOk = salesProduct === 'all' || sale.productId === salesProduct;
+                const monthOk = salesMonth === 'all' || String(sale.date || '').startsWith(salesMonth);
+                const statusValue = sale.paymentStatus || 'Paid';
+                const statusOk = salesStatus === 'all' || statusValue === salesStatus;
+                const haystack = `${sale.orderNo || ''} ${sale.notes || ''} ${getProductName(sale.productId)} ${sale.paymentMethod || ''}`.toLowerCase();
+                const searchOk = !salesSearch || haystack.includes(salesSearch);
+                return productOk && monthOk && statusOk && searchOk;
+            });
+        }
+
+        function updateSalesSummary(sales) {
+            const m = salesMetrics(sales);
+            const pending = sales
+                .filter(s => (s.paymentStatus || 'Paid') === 'Pending')
+                .reduce((sum, s) => sum + Number(s.total || 0), 0);
+            const revenue = document.getElementById('salesSummaryRevenue'); if (revenue) revenue.innerText = `RM ${m.totalRevenue.toFixed(2)}`;
+            const profit = document.getElementById('salesSummaryProfit'); if (profit) profit.innerText = `RM ${m.totalProfit.toFixed(2)}`;
+            const boxes = document.getElementById('salesSummaryBoxes'); if (boxes) boxes.innerText = String(m.totalBoxesSold);
+            const pendingEl = document.getElementById('salesSummaryPending'); if (pendingEl) pendingEl.innerText = `RM ${pending.toFixed(2)}`;
+        }
+
+        function csvCell(value) {
+            const text = String(value ?? '');
+            return `"${text.replace(/"/g, '""')}"`;
+        }
+
+        window.exportSalesCsv = function() {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const sales = [...getFilteredSales()].sort((a, b) => new Date(b.date) - new Date(a.date));
+            if (!sales.length) return showToast('No filtered sales to export.', 'info');
+            const headers = ['Order No', 'Date', 'Product', 'Quantity', 'Price / Box (RM)', 'Revenue (RM)', 'Cost / Box (RM)', 'Profit (RM)', 'Payment Method', 'Payment Status', 'Customer / Notes'];
+            const rows = sales.map(s => [
+                s.orderNo || '', s.date || '', getProductName(s.productId), Number(s.qty || 0),
+                Number(s.price || 0).toFixed(2), Number(s.total || 0).toFixed(2), Number(s.costPerBox || 0).toFixed(2),
+                Number(s.profit || 0).toFixed(2), s.paymentMethod || '', s.paymentStatus || 'Paid', s.notes || ''
+            ]);
+            const csv = [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `KekBatikLab_Sales_${localDateStr()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            showToast(`${sales.length} sale record(s) exported.`, 'success');
         };
 
         function renderSales() {
             const listEl = document.getElementById('salesList');
             if (!listEl) return;
-            const filter = window.appState.filters.salesProduct;
-            const sales = window.appState.sales.filter(s => filter === 'all' || s.productId === filter);
+            const sales = getFilteredSales();
             const badge = document.getElementById('salesCountBadge');
             if (badge) badge.innerText = `${sales.length} Sales`;
-            if (!sales.length) return listEl.innerHTML = `<div class="p-4 text-center text-slate-400 italic">No sales recorded yet.</div>`;
-            const sortedSales = [...sales].sort((a, b) => new Date(b.date) - new Date(a.date));
-            listEl.innerHTML = sortedSales.map(s => `
-                <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition gap-3">
-                    <div class="min-w-0">
-                        <div class="flex items-center gap-1.5">
-                            <span class="inline-flex items-center gap-1 text-[9px] font-bold bg-choco-50 text-choco-700 border border-choco-100 rounded-full px-1.5 py-0.5"><i class="fa-solid ${escapeHtml(getProductIcon(s.productId))}"></i>${escapeHtml(getProductName(s.productId))}</span>
-                            <span class="font-bold text-choco-900">${Number(s.qty || 1)} Box(es) @ RM${Number(s.price || 0).toFixed(2)}</span>
+            updateSalesSummary(sales);
+            if (!sales.length) {
+                listEl.innerHTML = '<div class="p-5 text-center text-slate-400 italic">No sales match the selected filters.</div>';
+                return;
+            }
+            const sortedSales = [...sales].sort((a, b) => {
+                const dateDiff = new Date(b.date || 0) - new Date(a.date || 0);
+                return dateDiff || Number(b.timestamp || 0) - Number(a.timestamp || 0);
+            });
+            listEl.innerHTML = sortedSales.map(s => {
+                const paymentStatus = s.paymentStatus || 'Paid';
+                const statusClass = paymentStatus === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200';
+                const profit = Number(s.profit || 0);
+                return `
+                <div class="p-3.5 hover:bg-slate-50 transition space-y-2">
+                    <div class="flex justify-between items-start gap-3">
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                <span class="inline-flex items-center gap-1 text-[9px] font-bold bg-choco-50 text-choco-700 border border-choco-100 rounded-full px-1.5 py-0.5"><i class="fa-solid ${escapeHtml(getProductIcon(s.productId))}"></i>${escapeHtml(getProductName(s.productId))}</span>
+                                <span class="inline-flex items-center text-[9px] font-bold border rounded-full px-1.5 py-0.5 ${statusClass}">${escapeHtml(paymentStatus)}</span>
+                                <span class="text-[9px] text-slate-400 font-mono">${escapeHtml(s.orderNo || 'Legacy sale')}</span>
+                            </div>
+                            <div class="font-bold text-choco-900 mt-1">${Number(s.qty || 1)} Box(es) @ RM${Number(s.price || 0).toFixed(2)}</div>
+                            <div class="text-[10px] text-slate-500 mt-1">${escapeHtml(s.date || '')} · ${escapeHtml(s.paymentMethod || 'Method not set')}${s.notes ? ' · ' + escapeHtml(s.notes) : ''}</div>
                         </div>
-                        <div class="text-[10px] text-slate-500 mt-1">${escapeHtml(s.date || '')} ${s.notes ? '&bull; ' + escapeHtml(s.notes) : ''}</div>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <div class="text-right">
+                        <div class="text-right shrink-0">
                             <div class="font-extrabold text-amber-700">RM ${Number(s.total || 0).toFixed(2)}</div>
-                            <div class="text-[10px] font-bold text-emerald-600">+RM ${Number(s.profit || 0).toFixed(2)} profit</div>
+                            <div class="text-[10px] font-bold ${profit >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${profit >= 0 ? '+' : ''}RM ${profit.toFixed(2)} profit</div>
                         </div>
-                        <button onclick="handleDeleteSale('${s.id}')" class="text-slate-300 hover:text-rose-600 transition"><i class="fa-solid fa-trash-can text-sm"></i></button>
                     </div>
-                </div>`).join('');
+                    <div class="flex justify-end gap-2 border-t border-slate-100 pt-2">
+                        <button onclick="handleEditSale('${s.id}')" class="text-[10px] font-bold text-choco-700 bg-choco-50 hover:bg-choco-100 border border-choco-100 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-pen-to-square mr-1"></i>Edit</button>
+                        <button onclick="handleDeleteSale('${s.id}')" class="text-[10px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-100 px-2.5 py-1.5 rounded-lg transition"><i class="fa-solid fa-trash-can mr-1"></i>Delete</button>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         // ================= DASHBOARD =================
@@ -1522,6 +1763,7 @@
         function renderAllViews() {
             renderProductSelectors();
             renderMonthFilter();
+            renderSalesMonthFilter();
             renderProducts();
             renderIngredients();
             renderSales();
