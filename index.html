@@ -1007,7 +1007,7 @@
     <!-- Firebase Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, set, push, remove, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
         import { getMessaging, getToken, deleteToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 
@@ -1026,6 +1026,44 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         const dbRoot = 'kekBatikLabApp';
+
+        // Firebase Authentication can take a moment to restore/create the
+        // anonymous session. Keep one shared promise so every feature waits
+        // for a real auth.currentUser instead of racing the SDK startup.
+        let firebaseAuthPromise = null;
+        async function ensureFirebaseAuth(timeoutMs = 10000) {
+            if (auth.currentUser) return auth.currentUser;
+            if (firebaseAuthPromise) return firebaseAuthPromise;
+
+            firebaseAuthPromise = new Promise((resolve, reject) => {
+                let finished = false;
+                let unsubscribe = () => {};
+                const finish = (fn, value) => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timeout);
+                    unsubscribe();
+                    fn(value);
+                };
+
+                const timeout = setTimeout(() => {
+                    finish(reject, new Error('Firebase Authentication timed out. Check that Anonymous sign-in is enabled and this domain is authorized.'));
+                }, timeoutMs);
+
+                unsubscribe = onAuthStateChanged(auth, (user) => {
+                    if (user) finish(resolve, user);
+                }, (err) => finish(reject, err));
+
+                if (!auth.currentUser) {
+                    signInAnonymously(auth).catch((err) => finish(reject, err));
+                }
+            }).catch((err) => {
+                firebaseAuthPromise = null;
+                throw err;
+            });
+
+            return firebaseAuthPromise;
+        }
         const getDbRef = (path) => ref(db, `${dbRoot}/${path}`);
 
         let messaging = null;
@@ -1213,11 +1251,26 @@
             el.value = sorted.includes(window.appState.filters.dashboardMonth) ? window.appState.filters.dashboardMonth : 'all';
         }
 
+        function getAuthErrorMessage(err) {
+            const code = String(err?.code || '').toLowerCase();
+            if (code.includes('operation-not-allowed')) {
+                return 'Firebase Anonymous Sign-in is disabled. Enable Authentication > Sign-in method > Anonymous in Firebase Console.';
+            }
+            if (code.includes('unauthorized-domain')) {
+                return 'This website domain is not authorized in Firebase Authentication. Add it under Authentication > Settings > Authorized domains.';
+            }
+            if (code.includes('network-request-failed')) {
+                return 'Firebase sign-in could not connect. Check your internet connection and try again.';
+            }
+            return `Firebase sign-in failed${code ? ` (${code})` : ''}. Reload the page after checking Firebase Authentication settings.`;
+        }
+
         async function initApp() {
             try {
-                await signInAnonymously(auth);
+                await ensureFirebaseAuth();
             } catch (err) {
-                console.warn("Auth fallback mode active:", err);
+                console.error("Firebase Authentication failed:", err);
+                showToast(getAuthErrorMessage(err), 'error');
             }
 
             await initAdminPushMessaging();
@@ -2881,9 +2934,16 @@
                     serviceWorkerRegistration: messagingServiceWorker
                 });
                 if (!token) return showToast('Firebase did not return a push token.', 'error');
-                if (!auth.currentUser?.uid) return showToast('Firebase sign-in is not ready yet.', 'error');
 
-                await set(getDbRef(`admin_push_devices/${auth.currentUser.uid}`), {
+                let firebaseUser;
+                try {
+                    firebaseUser = await ensureFirebaseAuth();
+                } catch (err) {
+                    console.error('Firebase sign-in is not ready:', err);
+                    return showToast(getAuthErrorMessage(err), 'error');
+                }
+
+                await set(getDbRef(`admin_push_devices/${firebaseUser.uid}`), {
                     token,
                     enabled: true,
                     deviceLabel: navigator.userAgent,

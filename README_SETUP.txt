@@ -27,6 +27,26 @@ database-rules-push-snippet.json
   Example rule fragment for the notification-device area only. Do NOT replace your
   full database rules with this small file; merge it into your existing rules.
 
+
+AUTHENTICATION FIX
+-------------------
+The app uses Firebase Anonymous Authentication for its Realtime Database session and
+push-device registration. Before testing, enable it in Firebase Console:
+
+1. Firebase Console -> Security -> Authentication -> Sign-in method.
+2. Enable the Anonymous provider and save.
+3. Authentication -> Settings -> Authorized domains: make sure your live website domain
+   is listed. The default Firebase Hosting domains are normally already associated with
+   the project; custom domains may need to be added.
+4. This package includes an auth section in firebase.json. After `firebase login` and
+   selecting the project, you can deploy the auth configuration with:
+
+   firebase deploy --only auth
+
+The web app now waits for a real `auth.currentUser` before registering a push token and
+shows a specific error when Anonymous Authentication is disabled, the domain is not
+authorized, or Firebase cannot be reached.
+
 ONE-TIME FIREBASE SETUP
 -----------------------
 A. Firebase Console -> Project Settings -> Cloud Messaging.
