@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>KekBatikLab</title>
+    <meta name="theme-color" content="#6b4226">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KekBatikLab">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="apple-touch-icon" href="./icon-192.png">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -864,6 +870,41 @@
                     </div>
                 </div>
 
+                <!-- Admin Mobile Push Notifications -->
+                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-bell text-amber-600"></i> Admin Mobile Notifications
+                            </h2>
+                            <p class="text-[10px] text-slate-500 mt-1">Receive a phone push notification whenever a customer places a new order.</p>
+                        </div>
+                        <span id="pushNotificationBadge" class="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 px-2 py-1 rounded-full shrink-0">Not enabled</span>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[10px] text-amber-900 leading-relaxed">
+                        <i class="fa-solid fa-circle-info mr-1"></i> This phone must allow notifications. The site must be opened using HTTPS.
+                    </div>
+
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-600">Firebase Web Push VAPID Key</label>
+                        <input type="text" id="pushVapidKey" placeholder="Paste the public VAPID key once"
+                            class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-[10px] font-mono focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                        <p class="text-[9px] text-slate-400 mt-1">Firebase Console → Project Settings → Cloud Messaging → Web Push certificates.</p>
+                    </div>
+
+                    <div id="pushNotificationStatus" class="text-[10px] text-slate-500 bg-slate-50 border border-slate-100 rounded-xl p-3">Checking notification support...</div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="enableAdminPushNotifications()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-[10px] transition shadow-sm flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-bell"></i> Enable on This Phone
+                        </button>
+                        <button onclick="disableAdminPushNotifications()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold py-2.5 rounded-xl text-[10px] transition flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-bell-slash"></i> Disable
+                        </button>
+                    </div>
+                </div>
+
                 <!-- QR & Bank Settings -->
                 <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
                     <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
@@ -968,6 +1009,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, set, push, remove, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getMessaging, getToken, deleteToken, onMessage, isSupported as isMessagingSupported } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-messaging.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyApCM07s1Malsb2XACOR5qNXooaXLkW-dc",
@@ -985,6 +1027,12 @@
         const db = getDatabase(app);
         const dbRoot = 'kekBatikLabApp';
         const getDbRef = (path) => ref(db, `${dbRoot}/${path}`);
+
+        let messaging = null;
+        let messagingServiceWorker = null;
+        let pendingAdminTab = new URLSearchParams(window.location.search).get('adminTab') || '';
+        const PUSH_VAPID_STORAGE_KEY = 'kblWebPushVapidKey';
+        const PUSH_TOKEN_STORAGE_KEY = 'kblAdminPushToken';
 
         const DEFAULT_PRODUCTS = [
             { id: 'kek-batik', name: 'Kek Batik', defaultPrice: 15, yieldCount: 10, icon: 'fa-cookie-bite', active: true, createdAt: 1 },
@@ -1172,6 +1220,8 @@
                 console.warn("Auth fallback mode active:", err);
             }
 
+            await initAdminPushMessaging();
+
             const saleDateInput = document.getElementById('saleDate');
             if (saleDateInput) saleDateInput.value = localDateStr();
             const orderDateInput = document.getElementById('orderDate');
@@ -1181,6 +1231,9 @@
             renderNavigation();
             renderAllViews();
             setTimeout(() => hideSplash(), 900);
+            if (pendingAdminTab === 'orders') {
+                setTimeout(() => openLoginModal(), 1100);
+            }
         }
 
         function hideSplash() {
@@ -1415,7 +1468,13 @@
                 closeLoginModal();
                 updateAuthHeader();
                 showToast('Welcome Admin! Full controls unlocked.', 'success');
-                switchTab('dashboard');
+                switchTab(pendingAdminTab === 'orders' ? 'orders' : 'dashboard');
+                if (pendingAdminTab) {
+                    pendingAdminTab = '';
+                    const cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete('adminTab');
+                    window.history.replaceState({}, '', cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+                }
             } else {
                 const errBox = document.getElementById('loginErrorMsg');
                 errBox.innerText = 'Invalid username or password!';
@@ -2711,6 +2770,151 @@
             window.open(`https://wa.me/${number}?text=${message}`, '_blank', 'noopener');
         };
 
+        // ================= ADMIN MOBILE PUSH NOTIFICATIONS =================
+        function getStoredVapidKey() {
+            return String(localStorage.getItem(PUSH_VAPID_STORAGE_KEY) || '').trim();
+        }
+
+        async function initAdminPushMessaging() {
+            const keyInput = document.getElementById('pushVapidKey');
+            if (keyInput) keyInput.value = getStoredVapidKey();
+
+            try {
+                const supported = await isMessagingSupported();
+                if (!supported || !('serviceWorker' in navigator) || !('Notification' in window)) {
+                    renderPushNotificationStatus('unsupported');
+                    return;
+                }
+
+                messagingServiceWorker = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                messaging = getMessaging(app);
+
+                onMessage(messaging, (payload) => {
+                    const body = payload?.data?.body || payload?.notification?.body || 'A new customer order has arrived.';
+                    showToast(body, 'info');
+                    renderNavigation();
+                });
+
+                renderPushNotificationStatus();
+            } catch (err) {
+                console.warn('Push notification initialization failed:', err);
+                renderPushNotificationStatus('error');
+            }
+        }
+
+        function renderPushNotificationStatus(forcedState = '') {
+            const statusEl = document.getElementById('pushNotificationStatus');
+            const badge = document.getElementById('pushNotificationBadge');
+            const keyInput = document.getElementById('pushVapidKey');
+            if (keyInput && document.activeElement !== keyInput) keyInput.value = getStoredVapidKey();
+            if (!statusEl || !badge) return;
+
+            let state = forcedState;
+            if (!state) {
+                if (!window.isSecureContext) state = 'https';
+                else if (!('Notification' in window)) state = 'unsupported';
+                else if (Notification.permission === 'denied') state = 'denied';
+                else if (Notification.permission === 'granted' && localStorage.getItem(PUSH_TOKEN_STORAGE_KEY)) state = 'enabled';
+                else state = 'ready';
+            }
+
+            const states = {
+                enabled: {
+                    text: '<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Notifications are enabled on this phone. New customer orders can appear as mobile push alerts.',
+                    badge: 'Enabled',
+                    badgeClass: 'text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full shrink-0'
+                },
+                denied: {
+                    text: '<i class="fa-solid fa-triangle-exclamation text-rose-600 mr-1"></i> Notification permission is blocked. Allow notifications in your browser/site settings, then enable again.',
+                    badge: 'Blocked',
+                    badgeClass: 'text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-1 rounded-full shrink-0'
+                },
+                https: {
+                    text: '<i class="fa-solid fa-lock text-rose-600 mr-1"></i> Push notifications require HTTPS (or localhost for testing).',
+                    badge: 'HTTPS required',
+                    badgeClass: 'text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-1 rounded-full shrink-0'
+                },
+                unsupported: {
+                    text: '<i class="fa-solid fa-circle-xmark text-rose-600 mr-1"></i> This browser/device does not support Firebase web push notifications.',
+                    badge: 'Unsupported',
+                    badgeClass: 'text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200 px-2 py-1 rounded-full shrink-0'
+                },
+                error: {
+                    text: '<i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1"></i> Push notification setup could not start. Check HTTPS, service-worker location and Firebase Messaging configuration.',
+                    badge: 'Setup issue',
+                    badgeClass: 'text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-full shrink-0'
+                },
+                ready: {
+                    text: '<i class="fa-solid fa-mobile-screen-button text-choco-600 mr-1"></i> Ready to register this phone. Paste the VAPID key, then tap Enable on This Phone.',
+                    badge: 'Not enabled',
+                    badgeClass: 'text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-200 px-2 py-1 rounded-full shrink-0'
+                }
+            };
+            const item = states[state] || states.ready;
+            statusEl.innerHTML = item.text;
+            badge.innerText = item.badge;
+            badge.className = item.badgeClass;
+        }
+
+        window.enableAdminPushNotifications = async function() {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            if (!window.isSecureContext) return renderPushNotificationStatus('https');
+            if (!messaging || !messagingServiceWorker) {
+                await initAdminPushMessaging();
+                if (!messaging || !messagingServiceWorker) return showToast('Push messaging is not available on this device.', 'error');
+            }
+
+            const input = document.getElementById('pushVapidKey');
+            const vapidKey = String(input?.value || '').trim();
+            if (!vapidKey) return showToast('Paste your Firebase Web Push VAPID key first.', 'error');
+            localStorage.setItem(PUSH_VAPID_STORAGE_KEY, vapidKey);
+
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    renderPushNotificationStatus(permission === 'denied' ? 'denied' : 'ready');
+                    return showToast('Notification permission was not granted.', 'error');
+                }
+
+                const token = await getToken(messaging, {
+                    vapidKey,
+                    serviceWorkerRegistration: messagingServiceWorker
+                });
+                if (!token) return showToast('Firebase did not return a push token.', 'error');
+                if (!auth.currentUser?.uid) return showToast('Firebase sign-in is not ready yet.', 'error');
+
+                await set(getDbRef(`admin_push_devices/${auth.currentUser.uid}`), {
+                    token,
+                    enabled: true,
+                    deviceLabel: navigator.userAgent,
+                    updatedAt: Date.now()
+                });
+                localStorage.setItem(PUSH_TOKEN_STORAGE_KEY, token);
+                renderPushNotificationStatus('enabled');
+                showToast('Admin mobile notifications enabled on this phone.', 'success');
+            } catch (err) {
+                console.error('Enable push notifications failed:', err);
+                renderPushNotificationStatus('error');
+                showToast('Could not enable push notifications. Check the VAPID key and Firebase Cloud Messaging setup.', 'error');
+            }
+        };
+
+        window.disableAdminPushNotifications = async function() {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            try {
+                if (auth.currentUser?.uid) await remove(getDbRef(`admin_push_devices/${auth.currentUser.uid}`));
+                if (messaging) {
+                    try { await deleteToken(messaging); } catch (_) {}
+                }
+                localStorage.removeItem(PUSH_TOKEN_STORAGE_KEY);
+                renderPushNotificationStatus('ready');
+                showToast('Notifications disabled on this phone.', 'info');
+            } catch (err) {
+                console.error('Disable push notifications failed:', err);
+                showToast('Could not disable notifications.', 'error');
+            }
+        };
+
         // ================= QR / SETTINGS =================
         window.openLightbox = (imgSrc) => { document.getElementById('lightboxImg').src = imgSrc; document.getElementById('lightboxModal').classList.remove('hidden'); };
         window.closeLightbox = () => document.getElementById('lightboxModal').classList.add('hidden');
@@ -2764,6 +2968,7 @@
             const setHolder = document.getElementById('setAccHolder'); if (setHolder) setHolder.value = s.accHolder || '';
             const setAcc = document.getElementById('setAccNum'); if (setAcc) setAcc.value = s.accNum || '';
             const setWa = document.getElementById('setWhatsappNumber'); if (setWa) setWa.value = s.whatsappNumber || '';
+            renderPushNotificationStatus();
         }
 
         function showToast(message, type = 'info') {
