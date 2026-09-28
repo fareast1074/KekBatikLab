@@ -527,6 +527,23 @@
                         <div id="orderProductAvailabilityList" class="space-y-2"></div>
                     </div>
 
+                    <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <div>
+                                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Closed Dates</div>
+                                <div class="text-[9px] text-slate-400 mt-0.5">Close a specific date for everyone, regardless of product availability.</div>
+                            </div>
+                            <span id="dateClosedBadge" class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-1 rounded-full">Open</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                            <input type="date" id="dateLimitDate" onchange="updateDateLimitAdminUi()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-white font-semibold">
+                            <button id="toggleDateClosedBtn" onclick="handleToggleOrderDateClosed()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold px-3 py-2 rounded-xl text-[10px] transition">
+                                <i class="fa-solid fa-ban mr-1"></i>Close This Date
+                            </button>
+                        </div>
+                        <div id="dateLimitSourceText" class="text-[8px] text-slate-400">Select a date to manage its order status.</div>
+                        <div id="closedDatesList" class="flex flex-wrap gap-1.5"></div>
+                    </div>
 
                     <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-2">
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Notice</div>
@@ -637,7 +654,7 @@
                         </div>
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600">Your Name</label>
-                            <input type="text" id="revName" placeholder="e.g Ali"
+                            <input type="text" id="revName" placeholder="e.g. Ali"
                                 class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                         </div>
                         <div>
@@ -1421,6 +1438,8 @@
                 const noticeInput = document.getElementById('orderNoticeInput');
                 if (noticeInput && document.activeElement !== noticeInput) noticeInput.value = window.appState.settings.orderNotice;
                     renderOrderProductSelector();
+                renderClosedDatesAdmin();
+                updateDateLimitAdminUi();
                 renderOrderProductAvailabilityAdmin();
                 renderOrderNotice();
                 renderOrders();
@@ -2491,9 +2510,29 @@
             await window.setProductAvailabilityMode(productId, current.mode === 'closed' ? 'always' : 'closed');
         };
 
+        window.renderClosedDatesAdmin = function() {
+            const list = document.getElementById('closedDatesList');
+            if (!list) return;
+            const dates = Object.keys(window.appState.settings.closedOrderDates || {})
+                .filter(d => window.appState.settings.closedOrderDates[d] === true)
+                .sort();
+            if (!dates.length) {
+                list.innerHTML = '<span class="text-[8px] text-slate-400 italic">No closed dates.</span>';
+                return;
+            }
+            list.innerHTML = dates.map(date => {
+                const label = formatOrderCalendarDate(date);
+                return `<span class="inline-flex items-center gap-1.5 bg-rose-50 border border-rose-100 rounded-full px-2 py-1 text-[8px] font-bold text-rose-700">
+                    <button type="button" onclick="document.getElementById('dateLimitDate').value='${date}'; updateDateLimitAdminUi();" class="hover:underline">${escapeHtml(label.weekday)} ${escapeHtml(label.dayMonth)}</button>
+                    <button type="button" onclick="document.getElementById('dateLimitDate').value='${date}'; handleToggleOrderDateClosed();" class="text-rose-500 hover:text-rose-800" title="Reopen date"><i class="fa-solid fa-xmark"></i></button>
+                </span>`;
+            }).join('');
+        };
+
         window.updateDateLimitAdminUi = function() {
             const dateInput = document.getElementById('dateLimitDate');
             if (!dateInput) return;
+            window.renderClosedDatesAdmin();
             if (!dateInput.value) dateInput.value = document.getElementById('orderDate')?.value || localDateStr();
             const date = dateInput.value;
             const limitInput = document.getElementById('dateOrderLimitInput');
@@ -2557,6 +2596,14 @@
             try {
                 if (closed) await remove(getDbRef(`settings/order_config/closedDates/${date}`));
                 else await set(getDbRef(`settings/order_config/closedDates/${date}`), true);
+                window.appState.settings.closedOrderDates = { ...(window.appState.settings.closedOrderDates || {}) };
+                if (closed) delete window.appState.settings.closedOrderDates[date];
+                else window.appState.settings.closedOrderDates[date] = true;
+                window.renderClosedDatesAdmin();
+                updateDateLimitAdminUi();
+                renderOrderProductSelector();
+                renderOrderCapacity();
+                renderOrderCalendar();
                 showToast(closed ? `${date} reopened for orders.` : `${date} closed for customer orders.`, 'success');
             } catch (err) {
                 showToast('Failed to update the date.', 'error');
