@@ -1246,6 +1246,11 @@
             if (totalEl) totalEl.innerText = `RM ${total.toFixed(2)}`;
         }
 
+        // Expose order render helpers because inline HTML event handlers run in the global scope,
+        // while this script is type="module" and keeps normal function declarations module-scoped.
+        window.renderOrderProductSelector = renderOrderProductSelector;
+        window.renderOrderPriceSummary = renderOrderPriceSummary;
+
         window.selectOrderProduct = function(productId) {
             const hidden = document.getElementById('orderProduct');
             const date = document.getElementById('orderDate')?.value || localDateStr();
