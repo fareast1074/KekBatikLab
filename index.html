@@ -152,6 +152,120 @@
             content: ''; position: absolute; bottom: -2px; left: 20%; width: 60%; height: 3px; background-color: #6b4226; border-radius: 9999px;
         }
         .card-shadow { box-shadow: 0 4px 20px -2px rgba(74, 47, 29, 0.08), 0 2px 6px -1px rgba(74, 47, 29, 0.04); }
+
+        /* Order V3: mobile-first quantity, live total and checkout feedback */
+        .order-product-option {
+            position: relative;
+            overflow: hidden;
+            transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+        }
+        .order-product-option:not(:disabled):active { transform: scale(0.985); }
+        .order-product-option.is-selected {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 22px -12px rgba(84, 51, 29, 0.50);
+        }
+        .order-product-thumb {
+            position: relative;
+            width: 3.35rem;
+            height: 3.35rem;
+            border-radius: 1rem;
+            overflow: hidden;
+            flex: 0 0 auto;
+        }
+        .order-product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .order-soldout-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(40, 23, 12, 0.62);
+            color: #fff;
+            font-size: 8px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .order-qty-stepper {
+            display: grid;
+            grid-template-columns: 3rem minmax(0, 1fr) 3rem;
+            align-items: stretch;
+            min-height: 3rem;
+            border: 1px solid #eee0d8;
+            border-radius: 1rem;
+            overflow: hidden;
+            background: #fff;
+        }
+        .order-qty-btn {
+            min-width: 3rem;
+            min-height: 3rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: #6b4226;
+            background: #fdf8f6;
+            transition: transform 120ms ease, background-color 120ms ease, opacity 120ms ease;
+        }
+        .order-qty-btn:not(:disabled):active { transform: scale(0.92); background: #f8efeb; }
+        .order-qty-btn:disabled { opacity: 0.32; cursor: not-allowed; }
+        .order-qty-input {
+            width: 100%;
+            border: 0;
+            border-left: 1px solid #eee0d8;
+            border-right: 1px solid #eee0d8;
+            outline: 0;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 800;
+            color: #4a2f1d;
+            background: #fff;
+            appearance: textfield;
+            -moz-appearance: textfield;
+        }
+        .order-qty-input::-webkit-outer-spin-button,
+        .order-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .order-total-pop { animation: orderTotalPop 220ms ease; }
+        @keyframes orderTotalPop {
+            0% { transform: scale(0.94); opacity: 0.72; }
+            65% { transform: scale(1.045); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .order-success-check { animation: orderSuccessCheck 420ms cubic-bezier(.2,.9,.25,1.25); }
+        @keyframes orderSuccessCheck {
+            0% { transform: scale(0.35) rotate(-18deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+        .order-skeleton {
+            position: relative;
+            overflow: hidden;
+            background: #f8efeb;
+        }
+        .order-skeleton::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            transform: translateX(-100%);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent);
+            animation: orderSkeleton 1.15s infinite;
+        }
+        @keyframes orderSkeleton { 100% { transform: translateX(100%); } }
+        .order-sticky-checkout {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(calc(100% - 0.75rem), 27.5rem);
+            bottom: calc(4.65rem + env(safe-area-inset-bottom));
+            z-index: 29;
+        }
+        #tab-orders:not(.hidden) { padding-bottom: 5.25rem; }
+        @media (max-width: 639px) {
+            #orderFormCard { padding: 1rem; }
+            #orderProductPicker { grid-template-columns: 1fr; }
+            .order-product-thumb { width: 3.75rem; height: 3.75rem; }
+            .order-qty-stepper { grid-template-columns: 3.25rem minmax(0, 1fr) 3.25rem; min-height: 3.25rem; }
+            .order-qty-btn { min-width: 3.25rem; min-height: 3.25rem; font-size: 1.1rem; }
+        }
     </style>
 </head>
 
@@ -578,29 +692,38 @@
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600">Product</label>
                             <input type="hidden" id="orderProduct" value="">
-                            <div id="orderProductPicker" class="grid grid-cols-2 gap-2 mt-1"></div>
-                            <div id="orderProductPickerHint" class="text-[9px] text-slate-400 mt-1.5">Choose a product available for the selected date.</div>
+                            <div id="orderProductPicker" class="grid grid-cols-2 gap-2 mt-1">
+                                <div class="order-skeleton h-[74px] rounded-2xl border border-choco-100"></div>
+                                <div class="order-skeleton h-[74px] rounded-2xl border border-choco-100"></div>
+                            </div>
+                            <div id="orderProductPickerHint" class="text-[9px] text-slate-400 mt-1.5">Loading products and availability...</div>
                         </div>
-                        <div class="grid grid-cols-2 gap-2.5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
                                 <label class="text-[11px] font-semibold text-slate-600">Quantity (Boxes)</label>
-                                <input type="number" id="orderQty" value="1" min="1" oninput="window.renderOrderCapacity(); window.renderOrderPriceSummary();" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
+                                <div id="orderQtyStepper" class="order-qty-stepper mt-1">
+                                    <button type="button" id="orderQtyMinus" class="order-qty-btn" onclick="window.changeOrderQty(-1)" aria-label="Decrease quantity"><i class="fa-solid fa-minus"></i></button>
+                                    <input type="number" id="orderQty" value="1" min="1" inputmode="numeric" pattern="[0-9]*" class="order-qty-input" aria-label="Order quantity in boxes">
+                                    <button type="button" id="orderQtyPlus" class="order-qty-btn" onclick="window.changeOrderQty(1)" aria-label="Increase quantity"><i class="fa-solid fa-plus"></i></button>
+                                </div>
+                                <div id="orderQtyHint" class="text-[9px] font-semibold text-slate-400 mt-1.5">1 box selected</div>
                             </div>
                             <div>
                                 <label class="text-[11px] font-semibold text-slate-600">Order Date</label>
-                                <input type="date" id="orderDate" onchange="window.renderOrderProductSelector(); window.renderOrderCapacity(); window.renderOrderCalendar(); window.renderOrderPriceSummary();" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                                <input type="date" id="orderDate" onchange="window.renderOrderProductSelector(); window.normalizeOrderQty(); window.renderOrderCapacity(); window.renderOrderCalendar(); window.renderOrderPriceSummary();" class="w-full mt-1 min-h-[3.25rem] border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
                         </div>
 
-                        <div id="orderPriceSummary" class="rounded-xl border border-amber-200 bg-amber-50/70 p-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <div>
-                                    <div class="text-[9px] uppercase tracking-wider font-bold text-amber-700">Price</div>
+                        <div id="orderPriceSummary" class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5">
+                            <div class="flex items-end justify-between gap-3">
+                                <div class="min-w-0">
+                                    <div class="text-[9px] uppercase tracking-wider font-bold text-amber-700">Live Price</div>
                                     <div id="orderUnitPrice" class="text-sm font-bold text-choco-900 mt-0.5">RM 0.00 / box</div>
+                                    <div id="orderCalcLine" class="text-[10px] text-slate-500 mt-1">1 box × RM 0.00</div>
                                 </div>
-                                <div class="text-right">
+                                <div class="text-right shrink-0">
                                     <div class="text-[9px] uppercase tracking-wider font-bold text-amber-700">Total</div>
-                                    <div id="orderTotalPrice" class="text-lg font-extrabold text-choco-900 mt-0.5">RM 0.00</div>
+                                    <div id="orderTotalPrice" class="text-2xl font-extrabold text-choco-900 mt-0.5 tabular-nums">RM 0.00</div>
                                 </div>
                             </div>
                         </div>
@@ -616,13 +739,26 @@
                             </select>
                         </div>
                         <div class="flex flex-col items-center justify-center gap-2 pt-1">
-                            <button id="orderSaveBtn" onclick="handleSaveOrder()" class="w-full max-w-sm bg-choco-700 hover:bg-choco-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                            <button id="orderSaveBtn" onclick="handleSaveOrder()" class="w-full max-w-sm min-h-[48px] bg-choco-700 hover:bg-choco-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-bag-shopping"></i> Place Order
                             </button>
                             <button id="orderCancelBtn" onclick="cancelOrderEdit()" class="hidden w-full max-w-sm bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition border border-slate-200 items-center justify-center gap-2">
                                 <i class="fa-solid fa-xmark"></i> Cancel
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <div id="orderMobileStickyBar" class="hidden order-sticky-checkout">
+                    <div class="mx-1 rounded-2xl border border-choco-200 bg-white/95 backdrop-blur-xl shadow-2xl p-2.5 flex items-center gap-3">
+                        <div class="min-w-0 flex-1 pl-1">
+                            <div class="text-[8px] uppercase tracking-wider font-extrabold text-slate-400">Order Total</div>
+                            <div id="orderStickyTotal" class="text-lg font-extrabold text-choco-900 tabular-nums leading-tight">RM 0.00</div>
+                            <div id="orderStickyDetail" class="text-[8px] text-slate-400 truncate mt-0.5">Choose product and quantity</div>
+                        </div>
+                        <button id="orderStickySubmit" type="button" onclick="handleSaveOrder()" class="shrink-0 bg-choco-700 hover:bg-choco-800 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold px-4 min-h-[44px] rounded-xl text-[11px] transition shadow-md flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-bag-shopping"></i><span>Place Order</span>
+                        </button>
                     </div>
                 </div>
 
@@ -918,6 +1054,18 @@
         </nav>
     </div>
 
+    <!-- Customer Order Success -->
+    <div id="orderSuccessModal" class="fixed inset-0 z-[70] hidden items-end sm:items-center justify-center bg-slate-950/45 backdrop-blur-sm p-3" onclick="window.closeOrderSuccess(event)">
+        <div class="w-full max-w-sm rounded-[26px] bg-white border border-choco-100 shadow-2xl p-5 text-center" onclick="event.stopPropagation()">
+            <div class="order-success-check w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl"><i class="fa-solid fa-check"></i></div>
+            <div class="mt-3 text-[10px] uppercase tracking-[0.18em] font-extrabold text-emerald-600">Order Confirmed</div>
+            <div id="orderSuccessNumber" class="font-serif text-xl font-bold text-choco-900 mt-1">Order</div>
+            <div id="orderSuccessDetail" class="text-[11px] text-slate-500 mt-2 leading-relaxed"></div>
+            <div id="orderSuccessTotal" class="text-2xl font-extrabold text-choco-900 mt-3 tabular-nums">RM 0.00</div>
+            <button type="button" onclick="window.closeOrderSuccess()" class="w-full mt-4 min-h-[46px] rounded-xl bg-choco-700 hover:bg-choco-800 text-white text-xs font-bold shadow-md">Done</button>
+        </div>
+    </div>
+
     <!-- Admin Login Modal -->
     <div id="loginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-xs rounded-2xl p-5 card-shadow space-y-4 border border-choco-100 animate-fadeIn">
@@ -1188,80 +1336,235 @@
             const orderDate = document.getElementById('orderDate')?.value || localDateStr();
             let products = window.appState.products.filter(p => p.active !== false);
 
+            // Customer view keeps sold-out products visible so availability is obvious.
+            // Products that are not scheduled/open for the chosen date stay hidden.
             if (!window.appState.isAdmin) {
-                products = products.filter(p => {
-                    if (!isProductOpenForOrder(p.id, orderDate)) return false;
-                    const cap = getEffectiveOrderCapacity(orderDate, p.id);
-                    return cap.limit <= 0 || cap.remaining > 0;
-                });
+                products = products.filter(p => isProductOpenForOrder(p.id, orderDate));
             }
 
             if (!products.length) {
                 hidden.value = '';
-                picker.innerHTML = `<div class="col-span-2 rounded-xl border border-rose-100 bg-rose-50/60 p-3 text-center text-[10px] font-semibold text-rose-600">No products are available for ${escapeHtml(orderDate)}.</div>`;
+                picker.innerHTML = `<div class="col-span-2 rounded-2xl border border-rose-100 bg-rose-50/60 p-4 text-center text-[10px] font-semibold text-rose-600">No products are available for ${escapeHtml(orderDate)}.</div>`;
                 if (hint) hint.innerText = 'Choose another working day or ask Admin to open a product.';
+                syncOrderQuantityControls(true);
+                renderOrderPriceSummary();
                 return;
             }
 
-            const selectedId = products.some(p => p.id === current) ? current : products[0].id;
+            const selectableProducts = products.filter(p => {
+                const cap = getEffectiveOrderCapacity(orderDate, p.id);
+                return window.appState.isAdmin || cap.limit <= 0 || cap.remaining > 0;
+            });
+            const selectedId = selectableProducts.some(p => p.id === current)
+                ? current
+                : (selectableProducts[0]?.id || '');
             hidden.value = selectedId;
 
             picker.innerHTML = products.map(p => {
                 const cap = getEffectiveOrderCapacity(orderDate, p.id);
                 const open = isProductOpenForOrder(p.id, orderDate);
                 const isSelected = p.id === selectedId;
+                const soldOut = cap.limit > 0 && cap.remaining <= 0;
                 const remaining = cap.limit > 0 ? `${cap.remaining} left` : 'Unlimited';
-                const disabled = !open || (cap.limit > 0 && cap.remaining <= 0);
+                const disabled = !open || soldOut;
                 const productIcon = escapeHtml(p.icon || 'fa-cookie-bite');
-                const statusText = !open ? 'Closed' : (cap.limit > 0 && cap.remaining <= 0 ? 'Full' : remaining);
-                const statusClass = !open || (cap.limit > 0 && cap.remaining <= 0) ? 'text-rose-500' : (cap.limit > 0 && cap.remaining <= Math.max(2, Math.ceil(cap.limit * 0.2)) ? 'text-amber-600' : 'text-emerald-600');
+                const statusText = !open ? 'Closed' : (soldOut ? 'Sold Out' : remaining);
+                const statusClass = !open || soldOut ? 'text-rose-500' : (cap.limit > 0 && cap.remaining <= Math.max(2, Math.ceil(cap.limit * 0.2)) ? 'text-amber-600' : 'text-emerald-600');
                 const unitPrice = Number(p.defaultPrice || 0);
+                const rawImage = String(p.imageUrl || p.image || p.photo || '').trim();
+                const visual = rawImage
+                    ? `<img src="${escapeHtml(rawImage)}" alt="${escapeHtml(p.name)}">`
+                    : `<span class="w-full h-full bg-gradient-to-br from-choco-50 to-amber-50 text-choco-700 border border-choco-100 flex items-center justify-center text-lg"><i class="fa-solid ${productIcon}"></i></span>`;
                 return `<button type="button" ${disabled ? 'disabled' : ''} onclick="selectOrderProduct('${escapeHtml(p.id)}')"
-                    class="w-full text-left rounded-xl border px-3 py-2.5 transition ${isSelected ? 'border-choco-700 bg-choco-50 ring-2 ring-choco-100' : 'border-slate-200 bg-white hover:border-choco-300 hover:bg-choco-50/50'} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}">
+                    class="order-product-option ${isSelected ? 'is-selected border-choco-700 bg-choco-50 ring-2 ring-choco-100' : 'border-slate-200 bg-white hover:border-choco-300 hover:bg-choco-50/50'} ${disabled ? 'cursor-not-allowed' : ''} w-full text-left rounded-2xl border px-3 py-2.5">
                     <div class="flex items-center gap-2.5">
-                        <span class="w-9 h-9 rounded-lg bg-choco-50 text-choco-700 border border-choco-100 flex items-center justify-center shrink-0"><i class="fa-solid ${productIcon}"></i></span>
+                        <span class="order-product-thumb">${visual}${soldOut ? '<span class="order-soldout-overlay">Sold Out</span>' : ''}</span>
                         <span class="min-w-0 flex-1">
-                            <span class="block text-[10px] font-extrabold text-choco-900 truncate">${escapeHtml(p.name)}</span>
+                            <span class="block text-[11px] font-extrabold text-choco-900 truncate">${escapeHtml(p.name)}</span>
                             <span class="block text-[10px] font-extrabold text-choco-700 mt-0.5">RM ${unitPrice.toFixed(2)} / box</span>
                             <span class="block text-[9px] font-bold ${statusClass} mt-0.5">${escapeHtml(statusText)}</span>
                         </span>
-                        ${isSelected ? '<i class="fa-solid fa-circle-check text-choco-700 text-sm"></i>' : ''}
+                        ${isSelected ? '<span class="w-6 h-6 rounded-full bg-choco-700 text-white flex items-center justify-center shrink-0"><i class="fa-solid fa-check text-[10px]"></i></span>' : ''}
                     </div>
                 </button>`;
             }).join('');
 
-            if (hint) hint.innerText = `${products.length} product${products.length === 1 ? '' : 's'} available for ${orderDate}. Tap a product to choose.`;
+            if (hint) {
+                if (!selectableProducts.length && !window.appState.isAdmin) hint.innerText = `All products are sold out for ${orderDate}.`;
+                else hint.innerText = `${selectableProducts.length} product${selectableProducts.length === 1 ? '' : 's'} available for ${orderDate}. Tap a product to choose.`;
+            }
+            syncOrderQuantityControls(true);
             renderOrderPriceSummary();
         }
 
-        function renderOrderPriceSummary() {
+        function getOrderPricing() {
             const productId = document.getElementById('orderProduct')?.value || '';
-            const qty = Math.max(1, parseInt(document.getElementById('orderQty')?.value || '1') || 1);
+            const qty = Math.max(1, parseInt(document.getElementById('orderQty')?.value || '1', 10) || 1);
             const product = window.appState.products.find(p => p.id === productId);
-            const unitPrice = Number(product?.defaultPrice || 0);
-            const total = unitPrice * qty;
-            const unitEl = document.getElementById('orderUnitPrice');
-            const totalEl = document.getElementById('orderTotalPrice');
-            if (unitEl) unitEl.innerText = `RM ${unitPrice.toFixed(2)} / box`;
-            if (totalEl) totalEl.innerText = `RM ${total.toFixed(2)}`;
+            const editId = document.getElementById('orderEditId')?.value || '';
+            const existing = editId ? window.appState.orders.find(o => o.id === editId) : null;
+            const unitPrice = Number(existing?.unitPrice ?? product?.defaultPrice ?? 0);
+            return { productId, product, qty, unitPrice, total: unitPrice * qty };
         }
 
-        // Expose order render helpers because inline HTML event handlers run in the global scope,
-        // while this script is type="module" and keeps normal function declarations module-scoped.
+        function animateOrderTotal(el) {
+            if (!el) return;
+            el.classList.remove('order-total-pop');
+            void el.offsetWidth;
+            el.classList.add('order-total-pop');
+        }
+
+        function renderOrderPriceSummary() {
+            const { product, qty, unitPrice, total } = getOrderPricing();
+            const unitEl = document.getElementById('orderUnitPrice');
+            const totalEl = document.getElementById('orderTotalPrice');
+            const calcEl = document.getElementById('orderCalcLine');
+            const stickyTotal = document.getElementById('orderStickyTotal');
+            const stickyDetail = document.getElementById('orderStickyDetail');
+            const qtyWord = qty === 1 ? 'box' : 'boxes';
+            if (unitEl) unitEl.innerText = `RM ${unitPrice.toFixed(2)} / box`;
+            if (calcEl) calcEl.innerText = `${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)}`;
+            if (totalEl) {
+                const next = `RM ${total.toFixed(2)}`;
+                if (totalEl.innerText !== next) animateOrderTotal(totalEl);
+                totalEl.innerText = next;
+            }
+            if (stickyTotal) stickyTotal.innerText = `RM ${total.toFixed(2)}`;
+            if (stickyDetail) stickyDetail.innerText = product ? `${product.name} · ${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)}` : 'Choose product and quantity';
+        }
+
+        function getOrderQuantityLimit() {
+            const date = document.getElementById('orderDate')?.value || localDateStr();
+            const productId = document.getElementById('orderProduct')?.value || '';
+            const editId = document.getElementById('orderEditId')?.value || '';
+            if (!productId) return { max: 0, cap: null };
+            const cap = getEffectiveOrderCapacity(date, productId, editId);
+            const max = cap.limit > 0 ? Math.max(0, Number(cap.availableForForm ?? cap.remaining ?? 0)) : Infinity;
+            return { max, cap };
+        }
+
+        function syncOrderQuantityControls(clampValue = false) {
+            const input = document.getElementById('orderQty');
+            const minus = document.getElementById('orderQtyMinus');
+            const plus = document.getElementById('orderQtyPlus');
+            const hint = document.getElementById('orderQtyHint');
+            if (!input) return;
+
+            let qty = Math.max(1, parseInt(input.value || '1', 10) || 1);
+            const { max } = getOrderQuantityLimit();
+            if (clampValue && Number.isFinite(max) && max > 0 && qty > max) qty = max;
+            if (clampValue && max === 0 && !window.appState.isAdmin) qty = 1;
+            input.value = String(qty);
+            input.max = Number.isFinite(max) && max > 0 ? String(max) : '';
+
+            if (minus) minus.disabled = qty <= 1;
+            if (plus) plus.disabled = max === 0 || (Number.isFinite(max) && qty >= max);
+            if (hint) {
+                const qtyWord = qty === 1 ? 'box' : 'boxes';
+                if (max === 0) hint.innerText = 'No stock available for this product/date';
+                else if (Number.isFinite(max)) hint.innerText = `${qty} ${qtyWord} selected · maximum ${max}`;
+                else hint.innerText = `${qty} ${qtyWord} selected · no daily limit`;
+            }
+        }
+
+        window.changeOrderQty = function(delta) {
+            const input = document.getElementById('orderQty');
+            if (!input) return;
+            const current = Math.max(1, parseInt(input.value || '1', 10) || 1);
+            const { max } = getOrderQuantityLimit();
+            let next = Math.max(1, current + Number(delta || 0));
+            if (Number.isFinite(max) && max > 0) next = Math.min(next, max);
+            if (max === 0) next = 1;
+            input.value = String(next);
+            syncOrderQuantityControls(false);
+            renderOrderPriceSummary();
+            if (typeof window.renderOrderCapacity === 'function') window.renderOrderCapacity();
+        };
+
+        window.handleOrderQtyInput = function() {
+            const input = document.getElementById('orderQty');
+            if (!input) return;
+            const raw = String(input.value || '').replace(/[^0-9]/g, '');
+            if (raw === '') {
+                input.value = '';
+                return;
+            }
+            let qty = Math.max(1, parseInt(raw, 10) || 1);
+            const { max } = getOrderQuantityLimit();
+            if (Number.isFinite(max) && max > 0) qty = Math.min(qty, max);
+            if (max === 0) qty = 1;
+            input.value = String(qty);
+            syncOrderQuantityControls(false);
+            renderOrderPriceSummary();
+            if (typeof window.renderOrderCapacity === 'function') window.renderOrderCapacity();
+        };
+
+        window.normalizeOrderQty = function() {
+            const input = document.getElementById('orderQty');
+            if (!input) return;
+            if (!String(input.value || '').trim()) input.value = '1';
+            syncOrderQuantityControls(true);
+            renderOrderPriceSummary();
+            if (typeof window.renderOrderCapacity === 'function') window.renderOrderCapacity();
+        };
+
+        function setOrderSubmitting(isBusy) {
+            window.orderSubmitBusy = Boolean(isBusy);
+            const buttons = [document.getElementById('orderSaveBtn'), document.getElementById('orderStickySubmit')];
+            buttons.forEach(btn => {
+                if (!btn) return;
+                btn.disabled = Boolean(isBusy) || btn.dataset.capacityBlocked === '1';
+            });
+            const main = document.getElementById('orderSaveBtn');
+            const sticky = document.getElementById('orderStickySubmit');
+            if (isBusy) {
+                if (main) main.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+                if (sticky) sticky.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i><span>Processing</span>';
+            } else {
+                const isAdmin = window.appState.isAdmin;
+                const editing = Boolean(document.getElementById('orderEditId')?.value);
+                if (main) main.innerHTML = editing ? '<i class="fa-solid fa-floppy-disk"></i> Save Changes' : (isAdmin ? '<i class="fa-solid fa-plus"></i> Add Order' : '<i class="fa-solid fa-bag-shopping"></i> Place Order');
+                if (sticky) sticky.innerHTML = '<i class="fa-solid fa-bag-shopping"></i><span>Place Order</span>';
+            }
+        }
+
+        window.showOrderSuccess = function(record) {
+            const modal = document.getElementById('orderSuccessModal');
+            if (!modal || !record) return;
+            const productName = getProductName(record.productId);
+            const qty = Number(record.qty || 1);
+            const prettyDate = new Date(`${record.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+            const num = document.getElementById('orderSuccessNumber');
+            const detail = document.getElementById('orderSuccessDetail');
+            const total = document.getElementById('orderSuccessTotal');
+            if (num) num.innerText = record.orderNo || 'Order Confirmed';
+            if (detail) detail.innerHTML = `${escapeHtml(productName)} × ${qty}<br>Pickup: ${escapeHtml(prettyDate)}`;
+            if (total) total.innerText = `RM ${Number(record.total || 0).toFixed(2)}`;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        };
+
+        window.closeOrderSuccess = function(event) {
+            if (event && event.target !== document.getElementById('orderSuccessModal')) return;
+            const modal = document.getElementById('orderSuccessModal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        };
+
+        // Expose order render helpers because inline HTML handlers run in global scope.
         window.renderOrderProductSelector = renderOrderProductSelector;
         window.renderOrderPriceSummary = renderOrderPriceSummary;
 
-        // Bind the quantity field directly as well as keeping the inline handler.
-        // This avoids browser/global-scope differences with type="module" scripts and
-        // makes the total update immediately while the customer types or uses arrows.
+        // Direct listeners are retained as a second path so live calculation remains reliable
+        // even if a browser handles inline module callbacks differently.
         const orderQtyAutoCalc = document.getElementById('orderQty');
         if (orderQtyAutoCalc && orderQtyAutoCalc.dataset.autoCalcBound !== '1') {
             const updateOrderTotalFromQty = () => {
-                renderOrderPriceSummary();
-                if (typeof window.renderOrderCapacity === 'function') window.renderOrderCapacity();
+                window.handleOrderQtyInput();
             };
             orderQtyAutoCalc.addEventListener('input', updateOrderTotalFromQty);
-            orderQtyAutoCalc.addEventListener('change', updateOrderTotalFromQty);
+            orderQtyAutoCalc.addEventListener('change', () => window.normalizeOrderQty());
             orderQtyAutoCalc.dataset.autoCalcBound = '1';
         }
 
@@ -1278,13 +1581,9 @@
                 return showToast(`${getProductName(productId)} is fully booked for ${date}.`, 'error');
             }
             hidden.value = productId;
-            const qty = document.getElementById('orderQty');
-            if (qty) {
-                qty.max = cap.limit > 0 ? Math.max(1, cap.remaining) : '';
-                const currentQty = Math.max(1, parseInt(qty.value || '1') || 1);
-                if (cap.limit > 0 && cap.remaining > 0 && currentQty > cap.remaining) qty.value = String(cap.remaining);
-            }
+            syncOrderQuantityControls(true);
             renderOrderProductSelector();
+            syncOrderQuantityControls(true);
             renderOrderCapacity();
             renderOrderPriceSummary();
         };
@@ -2458,7 +2757,18 @@
                     badgeEl.className = 'bg-slate-500/30 border border-white/20 text-white px-2.5 py-1 rounded-full text-[10px] font-bold';
                 }
             }
-            if (saveBtn) saveBtn.disabled = blockedByNoProduct || blockedByNonWorkingDay || blockedByClosedDate || blockedByLimit;
+            const blocked = blockedByNoProduct || blockedByNonWorkingDay || blockedByClosedDate || blockedByLimit;
+            if (saveBtn) {
+                saveBtn.dataset.capacityBlocked = blocked ? '1' : '0';
+                saveBtn.disabled = blocked || Boolean(window.orderSubmitBusy);
+            }
+            const stickySaveBtn = document.getElementById('orderStickySubmit');
+            if (stickySaveBtn) {
+                stickySaveBtn.dataset.capacityBlocked = blocked ? '1' : '0';
+                stickySaveBtn.disabled = blocked || Boolean(window.orderSubmitBusy);
+            }
+            syncOrderQuantityControls(false);
+            renderOrderPriceSummary();
         };
 
         window.saveProductDailyLimit = async function(productId) {
@@ -2675,6 +2985,7 @@
             document.getElementById('orderAdminSummary')?.classList.toggle('hidden', !isAdmin);
             document.getElementById('orderAdminListCard')?.classList.toggle('hidden', !isAdmin);
             document.getElementById('orderStatusField')?.classList.toggle('hidden', !isAdmin);
+            document.getElementById('orderMobileStickyBar')?.classList.toggle('hidden', isAdmin);
             const noticeInput = document.getElementById('orderNoticeInput');
             if (noticeInput && document.activeElement !== noticeInput) noticeInput.value = String(window.appState.settings.orderNotice || '');
             const dateInput = document.getElementById('orderDate');
@@ -2723,6 +3034,7 @@
                 const adminDate = document.getElementById('dateLimitDate');
                 if (adminDate && !adminDate.value) adminDate.value = date?.value || localDateStr();
             }
+            syncOrderQuantityControls(true);
             renderOrderCapacity();
             renderOrderCalendar();
             renderOrderPriceSummary();
@@ -2754,6 +3066,7 @@
             document.getElementById('orderCancelBtn').classList.remove('hidden');
             const adminDate = document.getElementById('dateLimitDate');
             if (adminDate) adminDate.value = dateEl.value;
+            syncOrderQuantityControls(true);
             renderOrderCapacity();
             renderOrderCalendar();
             renderOrderPriceSummary();
@@ -2806,6 +3119,7 @@
             const newKey = editId || push(getDbRef('orders')).key;
             let blockedRemaining = 0;
             let blockReason = '';
+            setOrderSubmitting(true);
             try {
                 const result = await runTransaction(getDbRef('orders'), (current) => {
                     const orders = current || {};
@@ -2849,9 +3163,13 @@
 
                 if (editId) showToast(`${orderNo} updated.`, 'success');
                 else showToast(isAdmin ? `${orderNo} added.` : `Order received! ${orderNo}`, 'success');
+                if (!isAdmin && !editId) window.showOrderSuccess(record);
                 resetOrderForm();
             } catch (err) {
                 showToast(editId ? 'Failed to update order.' : 'Failed to place order.', 'error');
+            } finally {
+                setOrderSubmitting(false);
+                renderOrderCapacity();
             }
         };
 
