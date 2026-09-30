@@ -1056,13 +1056,30 @@
 
     <!-- Customer Order Success -->
     <div id="orderSuccessModal" class="fixed inset-0 z-[70] hidden items-end sm:items-center justify-center bg-slate-950/45 backdrop-blur-sm p-3" onclick="window.closeOrderSuccess(event)">
-        <div class="w-full max-w-sm rounded-[26px] bg-white border border-choco-100 shadow-2xl p-5 text-center" onclick="event.stopPropagation()">
+        <div class="w-full max-w-sm max-h-[92vh] overflow-y-auto rounded-[26px] bg-white border border-choco-100 shadow-2xl p-5 text-center" onclick="event.stopPropagation()">
             <div class="order-success-check w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto text-2xl"><i class="fa-solid fa-check"></i></div>
             <div class="mt-3 text-[10px] uppercase tracking-[0.18em] font-extrabold text-emerald-600">Order Confirmed</div>
             <div id="orderSuccessNumber" class="font-serif text-xl font-bold text-choco-900 mt-1">Order</div>
             <div id="orderSuccessDetail" class="text-[11px] text-slate-500 mt-2 leading-relaxed"></div>
             <div id="orderSuccessTotal" class="text-2xl font-extrabold text-choco-900 mt-3 tabular-nums">RM 0.00</div>
-            <button type="button" onclick="window.closeOrderSuccess()" class="w-full mt-4 min-h-[46px] rounded-xl bg-choco-700 hover:bg-choco-800 text-white text-xs font-bold shadow-md">Done</button>
+
+            <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 space-y-2.5">
+                <div class="text-[9px] uppercase tracking-[0.18em] font-extrabold text-amber-700">Make Payment</div>
+                <div class="relative inline-block border-4 border-choco-700 p-2 rounded-2xl bg-white shadow-sm">
+                    <img id="orderSuccessQrImg" src="https://placehold.co/300x300/6b4226/ffffff?text=DuitNow+QR" alt="Payment QR" onclick="window.openLightbox(this.src)" class="w-44 h-44 object-contain rounded-lg mx-auto cursor-zoom-in">
+                </div>
+                <div class="bg-white/80 border border-amber-200 rounded-xl p-2.5 text-left space-y-1.5">
+                    <div class="flex justify-between gap-3 text-[10px]"><span class="text-slate-500">Bank</span><span id="orderSuccessBankName" class="font-bold text-choco-900 text-right">Maybank</span></div>
+                    <div class="flex justify-between gap-3 text-[10px]"><span class="text-slate-500">Account Name</span><span id="orderSuccessAccHolder" class="font-bold text-choco-900 text-right">KekBatikLab</span></div>
+                    <div class="flex justify-between gap-3 text-[10px] border-t border-amber-100 pt-1.5"><span class="text-slate-500">Account No.</span><span id="orderSuccessAccNum" class="font-mono font-bold text-choco-900 text-right">5648 1234 9901</span></div>
+                </div>
+                <div class="text-[9px] text-slate-500 leading-relaxed">After payment, tap WhatsApp below and send your payment receipt/screenshot.</div>
+            </div>
+
+            <button id="orderSuccessWhatsappBtn" type="button" onclick="window.openOrderReceiptWhatsApp()" class="w-full mt-3 min-h-[46px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md flex items-center justify-center gap-2">
+                <i class="fa-brands fa-whatsapp text-base"></i> WhatsApp Payment Receipt
+            </button>
+            <button type="button" onclick="window.closeOrderSuccess()" class="w-full mt-2 min-h-[44px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-200">Done</button>
         </div>
     </div>
 
@@ -1531,17 +1548,69 @@
         window.showOrderSuccess = function(record) {
             const modal = document.getElementById('orderSuccessModal');
             if (!modal || !record) return;
+
+            // Keep the completed order available to the receipt/WhatsApp action.
+            window.currentOrderReceipt = { ...record };
+
             const productName = getProductName(record.productId);
             const qty = Number(record.qty || 1);
             const prettyDate = new Date(`${record.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
             const num = document.getElementById('orderSuccessNumber');
             const detail = document.getElementById('orderSuccessDetail');
             const total = document.getElementById('orderSuccessTotal');
+            const qr = document.getElementById('orderSuccessQrImg');
+            const bank = document.getElementById('orderSuccessBankName');
+            const holder = document.getElementById('orderSuccessAccHolder');
+            const acc = document.getElementById('orderSuccessAccNum');
+            const waBtn = document.getElementById('orderSuccessWhatsappBtn');
+            const settings = window.appState.settings || {};
+
             if (num) num.innerText = record.orderNo || 'Order Confirmed';
-            if (detail) detail.innerHTML = `${escapeHtml(productName)} × ${qty}<br>Pickup: ${escapeHtml(prettyDate)}`;
+            if (detail) {
+                detail.innerHTML = `<span class="font-bold text-choco-900">${escapeHtml(record.customer || 'Customer')}</span><br>${escapeHtml(productName)} × ${qty}<br>Pickup: ${escapeHtml(prettyDate)}`;
+            }
             if (total) total.innerText = `RM ${Number(record.total || 0).toFixed(2)}`;
+            if (qr) qr.src = settings.qrUrl || 'https://placehold.co/300x300/6b4226/ffffff?text=DuitNow+QR';
+            if (bank) bank.innerText = settings.bankName || 'Maybank';
+            if (holder) holder.innerText = settings.accHolder || 'KekBatikLab';
+            if (acc) acc.innerText = settings.accNum || '5648 1234 9901';
+            if (waBtn) {
+                const hasWhatsapp = Boolean(cleanWhatsapp(settings.whatsappNumber));
+                waBtn.disabled = !hasWhatsapp;
+                waBtn.classList.toggle('opacity-50', !hasWhatsapp);
+                waBtn.classList.toggle('cursor-not-allowed', !hasWhatsapp);
+                waBtn.title = hasWhatsapp ? 'Send payment receipt details on WhatsApp' : 'Admin has not configured WhatsApp number';
+            }
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+        };
+
+        window.openOrderReceiptWhatsApp = function() {
+            const record = window.currentOrderReceipt;
+            if (!record) return showToast('Order details are not available.', 'error');
+            const number = cleanWhatsapp(window.appState.settings.whatsappNumber);
+            if (!number) return showToast('WhatsApp is not configured. Please contact the seller.', 'info');
+
+            const productName = getProductName(record.productId);
+            const qty = Number(record.qty || 1);
+            const total = Number(record.total || (qty * Number(record.unitPrice || 0)));
+            const prettyDate = new Date(`${record.date}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+            const customer = String(record.customer || 'Customer').trim();
+            const message = [
+                'Hi, I have completed my payment for my order.',
+                '',
+                `Name: ${customer}`,
+                `Order No: ${record.orderNo || '-'}`,
+                `Product: ${productName}`,
+                `Quantity: ${qty} box${qty === 1 ? '' : 'es'}`,
+                `Total: RM ${total.toFixed(2)}`,
+                `Pickup Date: ${prettyDate}`,
+                '',
+                'I will send the payment receipt/screenshot here for confirmation.'
+            ].join('\n');
+
+            window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, '_blank', 'noopener');
         };
 
         window.closeOrderSuccess = function(event) {
