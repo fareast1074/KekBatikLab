@@ -515,6 +515,7 @@
                         <h2 id="saleFormTitle" class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
                             <i class="fa-solid fa-cash-register text-choco-600"></i> Record New Sale
                         </h2>
+                        <span class="text-[9px] font-semibold text-slate-400 bg-slate-50 border border-slate-200 px-2 py-1 rounded-full">Customer orders sync automatically</span>
                         <span id="saleEditBadge" class="hidden text-[9px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-full">Editing</span>
                     </div>
                     <input type="hidden" id="saleEditId" value="">
@@ -1224,6 +1225,7 @@
                 salesSearch: '',
                 reviewProduct: 'all'
             },
+            dataReady: { sales: false, orders: false },
             settings: {
                 bankName: 'Maybank',
                 accHolder: 'MUHAMMAD FAIZ',
@@ -1827,19 +1829,23 @@
             onValue(getDbRef('sales'), (snapshot) => {
                 const data = snapshot.val();
                 window.appState.sales = data ? Object.keys(data).map(key => ({ id: key, ...data[key], productId: data[key].productId || 'kek-batik' })) : [];
+                window.appState.dataReady.sales = true;
                 renderMonthFilter();
                 renderSalesMonthFilter();
                 renderSales();
                 updateCalculationsAndDashboard();
+                reconcileCustomerOrderSales();
             });
 
             onValue(getDbRef('orders'), (snapshot) => {
                 const data = snapshot.val();
                 window.appState.orders = data ? Object.keys(data).map(key => ({ id: key, ...data[key], productId: data[key].productId || 'kek-batik' })) : [];
+                window.appState.dataReady.orders = true;
                 renderOrders();
                 renderOrderCapacity();
                 renderOrderCalendar();
                 renderNavigation();
+                reconcileCustomerOrderSales();
             });
 
             onValue(getDbRef('settings/order_config'), (snapshot) => {
@@ -2326,6 +2332,62 @@
         }
 
         // ================= SALES =================
+        function findSaleLinkedToOrder(orderId, orderNo) {
+            return window.appState.sales.find(sale =>
+                String(sale.orderId || '') === String(orderId || '') ||
+                (orderNo && String(sale.orderNo || '') === String(orderNo) && String(sale.source || '') === 'Customer Order')
+            ) || null;
+        }
+
+        function getCustomerOrderSaleRecord(order, existingSale = null) {
+            const productId = order.productId || 'kek-batik';
+            const qty = Math.max(1, Number(order.qty || 1));
+            const price = Math.max(0, Number(order.unitPrice || 0));
+            const savedCost = Number(existingSale?.costPerBox);
+            const costPerBox = Number.isFinite(savedCost) ? savedCost : calculateCostPerBox(productId);
+            const total = Number(order.total ?? (qty * price));
+            return {
+                ...(existingSale || {}),
+                orderId: order.id,
+                orderNo: order.orderNo || existingSale?.orderNo || `ORD-${Date.now()}`,
+                productId,
+                qty,
+                price,
+                total,
+                costPerBox,
+                profit: total - (qty * costPerBox),
+                date: order.date || localDateStr(),
+                notes: existingSale?.notes || `Customer: ${order.customer || 'Customer'}`,
+                paymentMethod: existingSale?.paymentMethod || 'QR / WhatsApp',
+                paymentStatus: existingSale?.paymentStatus || 'Pending',
+                source: 'Customer Order',
+                timestamp: existingSale?.timestamp || order.timestamp || Date.now(),
+                updatedAt: Date.now(),
+                autoLinked: true
+            };
+        }
+
+        async function syncCustomerOrderSale(order, orderId = order?.id) {
+            if (!order || (order.source || 'Customer') !== 'Customer' || !orderId) return null;
+            const existing = findSaleLinkedToOrder(orderId, order.orderNo);
+            const sale = getCustomerOrderSaleRecord({ ...order, id: orderId }, existing);
+            const saleId = existing?.id || `customerOrder_${orderId}`;
+            await set(getDbRef(`sales/${saleId}`), sale);
+            return saleId;
+        }
+
+        async function reconcileCustomerOrderSales() {
+            if (!window.appState.dataReady.sales || !window.appState.dataReady.orders) return;
+            const customerOrders = window.appState.orders.filter(order => (order.source || 'Customer') === 'Customer');
+            for (const order of customerOrders) {
+                try {
+                    await syncCustomerOrderSale(order, order.id);
+                } catch (err) {
+                    console.warn('Could not auto-sync customer order sale:', order.orderNo || order.id, err);
+                }
+            }
+        }
+
         function renderSalesMonthFilter() {
             const el = document.getElementById('salesMonthFilter');
             if (!el) return;
@@ -3230,6 +3292,14 @@
                     return;
                 }
 
+                if ((record.source || '') === 'Customer') {
+                    try {
+                        await syncCustomerOrderSale({ ...record, id: newKey }, newKey);
+                    } catch (saleErr) {
+                        console.error('Order saved, but automatic sale sync failed:', saleErr);
+                        showToast(`${orderNo} received, but Sales sync needs attention.`, 'error');
+                    }
+                }
                 if (editId) showToast(`${orderNo} updated.`, 'success');
                 else showToast(isAdmin ? `${orderNo} added.` : `Order received! ${orderNo}`, 'success');
                 if (!isAdmin && !editId) window.showOrderSuccess(record);
@@ -3247,7 +3317,12 @@
             const order = window.appState.orders.find(o => o.id === id);
             if (!order) return;
             try {
-                await set(getDbRef(`orders/${id}`), { ...order, status: 'Completed', updatedAt: Date.now() });
+                const updatedOrder = { ...order, status: 'Completed', updatedAt: Date.now() };
+                await set(getDbRef(`orders/${id}`), updatedOrder);
+                if ((updatedOrder.source || 'Customer') === 'Customer') {
+                    try { await syncCustomerOrderSale({ ...updatedOrder, id }, id); }
+                    catch (saleErr) { console.error('Could not sync completed order to Sales:', saleErr); }
+                }
                 showToast(`${order.orderNo || 'Order'} completed.`, 'success');
             } catch (err) { showToast('Failed to update order.', 'error'); }
         };
@@ -3258,9 +3333,12 @@
             if (!order) return;
             if (!confirm(`Delete ${order.orderNo || 'this order'}?`)) return;
             try {
+                const linkedSale = findSaleLinkedToOrder(id, order.orderNo);
                 await remove(getDbRef(`orders/${id}`));
+                if (linkedSale) await remove(getDbRef(`sales/${linkedSale.id}`));
+                else await remove(getDbRef(`sales/customerOrder_${id}`));
                 if (document.getElementById('orderEditId')?.value === id) resetOrderForm();
-                showToast('Order deleted.', 'info');
+                showToast(linkedSale ? 'Order and linked sale deleted.' : 'Order deleted.', 'info');
             } catch (err) { showToast('Failed to delete order.', 'error'); }
         };
 
