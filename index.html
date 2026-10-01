@@ -1545,12 +1545,114 @@
             }
         }
 
-        window.showOrderSuccess = function(record) {
+        const ORDER_SUCCESS_REFRESH_DELAY_MS = 3 * 60 * 1000;
+        const ORDER_SUCCESS_STORAGE_KEY = 'kblPendingOrderReceipt';
+        let orderSuccessRefreshTimer = null;
+
+        function clearOrderSuccessRefreshTimer() {
+            if (orderSuccessRefreshTimer) {
+                clearTimeout(orderSuccessRefreshTimer);
+                orderSuccessRefreshTimer = null;
+            }
+        }
+
+        function savePendingOrderReceipt(record, expiresAt) {
+            try {
+                localStorage.setItem(ORDER_SUCCESS_STORAGE_KEY, JSON.stringify({ record, expiresAt }));
+            } catch (err) {
+                console.warn('Could not persist pending order receipt:', err);
+            }
+        }
+
+        function clearPendingOrderReceipt() {
+            try {
+                localStorage.removeItem(ORDER_SUCCESS_STORAGE_KEY);
+            } catch (err) {
+                console.warn('Could not clear pending order receipt:', err);
+            }
+        }
+
+        function scheduleOrderSuccessRefresh(expiresAt) {
+            clearOrderSuccessRefreshTimer();
+            const remaining = Math.max(0, Number(expiresAt || 0) - Date.now());
+            if (!remaining) {
+                clearPendingOrderReceipt();
+                window.location.reload();
+                return;
+            }
+            orderSuccessRefreshTimer = setTimeout(() => {
+                clearPendingOrderReceipt();
+                window.location.reload();
+            }, remaining);
+        }
+
+        function updateOrderSuccessWhatsappButton() {
+            const waBtn = document.getElementById('orderSuccessWhatsappBtn');
+            if (!waBtn) return;
+            const settings = window.appState.settings || {};
+            const hasWhatsapp = Boolean(cleanWhatsapp(settings.whatsappNumber));
+            waBtn.disabled = !hasWhatsapp;
+            waBtn.classList.toggle('opacity-50', !hasWhatsapp);
+            waBtn.classList.toggle('cursor-not-allowed', !hasWhatsapp);
+            waBtn.title = hasWhatsapp ? 'Send payment receipt details on WhatsApp' : 'Admin has not configured WhatsApp number';
+        }
+
+        function restorePendingOrderReceipt() {
+            try {
+                const raw = localStorage.getItem(ORDER_SUCCESS_STORAGE_KEY);
+                if (!raw) return;
+                const pending = JSON.parse(raw);
+                const expiresAt = Number(pending?.expiresAt || 0);
+                if (!pending?.record || !expiresAt) {
+                    clearPendingOrderReceipt();
+                    return;
+                }
+                if (Date.now() >= expiresAt) {
+                    clearPendingOrderReceipt();
+                    return;
+                }
+
+                window.showOrderSuccess(pending.record, { persist: false, expiresAt });
+            } catch (err) {
+                console.warn('Could not restore pending order receipt:', err);
+                clearPendingOrderReceipt();
+            }
+        }
+
+        function checkPendingOrderReceipt() {
+            try {
+                const raw = localStorage.getItem(ORDER_SUCCESS_STORAGE_KEY);
+                if (!raw) return;
+                const pending = JSON.parse(raw);
+                const expiresAt = Number(pending?.expiresAt || 0);
+                if (!pending?.record || !expiresAt) {
+                    clearPendingOrderReceipt();
+                    return;
+                }
+                if (Date.now() >= expiresAt) {
+                    clearPendingOrderReceipt();
+                    clearOrderSuccessRefreshTimer();
+                    window.location.reload();
+                    return;
+                }
+                scheduleOrderSuccessRefresh(expiresAt);
+            } catch (err) {
+                console.warn('Could not check pending order receipt:', err);
+                clearPendingOrderReceipt();
+                clearOrderSuccessRefreshTimer();
+            }
+        }
+
+        window.showOrderSuccess = function(record, options = {}) {
             const modal = document.getElementById('orderSuccessModal');
             if (!modal || !record) return;
 
             // Keep the completed order available to the receipt/WhatsApp action.
             window.currentOrderReceipt = { ...record };
+
+            const expiresAt = Number(options.expiresAt || (Date.now() + ORDER_SUCCESS_REFRESH_DELAY_MS));
+            if (options.persist !== false) savePendingOrderReceipt(window.currentOrderReceipt, expiresAt);
+            scheduleOrderSuccessRefresh(expiresAt);
 
             const productName = getProductName(record.productId);
             const qty = Number(record.qty || 1);
@@ -1562,7 +1664,6 @@
             const bank = document.getElementById('orderSuccessBankName');
             const holder = document.getElementById('orderSuccessAccHolder');
             const acc = document.getElementById('orderSuccessAccNum');
-            const waBtn = document.getElementById('orderSuccessWhatsappBtn');
             const settings = window.appState.settings || {};
 
             if (num) num.innerText = record.orderNo || 'Order Confirmed';
@@ -1574,13 +1675,7 @@
             if (bank) bank.innerText = settings.bankName || 'Maybank';
             if (holder) holder.innerText = settings.accHolder || 'KekBatikLab';
             if (acc) acc.innerText = settings.accNum || '5648 1234 9901';
-            if (waBtn) {
-                const hasWhatsapp = Boolean(cleanWhatsapp(settings.whatsappNumber));
-                waBtn.disabled = !hasWhatsapp;
-                waBtn.classList.toggle('opacity-50', !hasWhatsapp);
-                waBtn.classList.toggle('cursor-not-allowed', !hasWhatsapp);
-                waBtn.title = hasWhatsapp ? 'Send payment receipt details on WhatsApp' : 'Admin has not configured WhatsApp number';
-            }
+            updateOrderSuccessWhatsappButton();
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
@@ -1619,7 +1714,15 @@
             if (!modal) return;
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+            clearOrderSuccessRefreshTimer();
+            clearPendingOrderReceipt();
+            window.currentOrderReceipt = null;
         };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checkPendingOrderReceipt();
+        });
+        window.addEventListener('pageshow', () => checkPendingOrderReceipt());
 
         // Expose order render helpers because inline HTML handlers run in global scope.
         window.renderOrderProductSelector = renderOrderProductSelector;
@@ -1783,6 +1886,7 @@
             setupDatabaseListeners();
             renderNavigation();
             renderAllViews();
+            restorePendingOrderReceipt();
             setTimeout(() => hideSplash(), 900);
             if (pendingAdminTab === 'orders') {
                 setTimeout(() => openLoginModal(), 1100);
@@ -1887,6 +1991,7 @@
                 if (data) {
                     window.appState.settings = { ...window.appState.settings, ...data };
                     renderSettingsAndPayment();
+                    updateOrderSuccessWhatsappButton();
                 }
             });
 
@@ -1896,6 +2001,7 @@
                     window.appState.settings.whatsappNumber = data.whatsappNumber || '';
                     renderSettingsAndPayment();
                     renderReviews();
+                    updateOrderSuccessWhatsappButton();
                 }
             });
 
