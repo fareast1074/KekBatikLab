@@ -1950,8 +1950,13 @@
                 window.appState.orders
                     .filter(order => (order.source || 'Customer') === 'Customer')
                     .forEach(order => {
-                        const alreadyLinked = window.appState.sales.some(sale => sale.orderId === order.id);
-                        if (!alreadyLinked) {
+                        const linkedSale = window.appState.sales.find(sale => sale.orderId === order.id);
+                        const alreadyLinked = Boolean(linkedSale);
+                        const paymentNeedsSync = linkedSale && (
+                            (order.status === 'Completed' && linkedSale.paymentStatus !== 'Paid') ||
+                            (order.status !== 'Completed' && linkedSale.paymentStatus !== 'Pending')
+                        );
+                        if (!alreadyLinked || paymentNeedsSync) {
                             syncCustomerOrderToSale(order.id, order).catch(err =>
                                 console.warn('Failed to sync customer order to sales:', order.id, err)
                             );
@@ -3292,7 +3297,12 @@
                 productId,
                 notes: `Customer order — ${String(order.customer || 'Customer').trim() || 'Customer'}`,
                 paymentMethod: existingSale?.paymentMethod || 'Customer Order',
-                paymentStatus: existingSale?.paymentStatus || 'Pending',
+                // Order status controls payment state for customer-order sales:
+                // Completed means the payment has been confirmed.
+                paymentStatus: order.status === 'Completed' ? 'Paid' : 'Pending',
+                paymentConfirmedAt: order.status === 'Completed'
+                    ? (existingSale?.paymentConfirmedAt || Date.now())
+                    : null,
                 source: 'Customer Order',
                 timestamp: existingSale?.timestamp || order.timestamp || Date.now(),
                 updatedAt: Date.now()
@@ -3433,9 +3443,20 @@
             const order = window.appState.orders.find(o => o.id === id);
             if (!order) return;
             try {
-                await set(getDbRef(`orders/${id}`), { ...order, status: 'Completed', updatedAt: Date.now() });
-                showToast(`${order.orderNo || 'Order'} completed.`, 'success');
-            } catch (err) { showToast('Failed to update order.', 'error'); }
+                const updatedOrder = { ...order, status: 'Completed', updatedAt: Date.now() };
+                await set(getDbRef(`orders/${id}`), updatedOrder);
+
+                // For customer orders, completing the order also confirms payment
+                // on the linked automatic sale.
+                if ((order.source || 'Customer') === 'Customer') {
+                    await syncCustomerOrderToSale(id, updatedOrder);
+                }
+
+                showToast(`${order.orderNo || 'Order'} completed and marked as paid.`, 'success');
+            } catch (err) {
+                console.error('Failed to complete order / mark payment:', err);
+                showToast('Failed to complete order.', 'error');
+            }
         };
 
         window.handleDeleteOrder = async function(id) {
