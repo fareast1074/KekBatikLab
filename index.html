@@ -419,42 +419,86 @@
                     </div>
                 </div>
 
-                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-choco-800 flex items-center gap-1.5">
-                        <i class="fa-solid fa-plus-circle text-choco-600"></i> Add Ingredient
-                    </h3>
-                    <div class="space-y-2.5">
+                <div id="ingredientFormCard" class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
+                    <div class="flex items-start justify-between gap-3">
                         <div>
-                            <label class="text-[11px] font-semibold text-slate-600">Ingredient Name</label>
+                            <h3 id="ingredientFormTitle" class="text-xs font-bold uppercase tracking-wider text-choco-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-plus-circle text-choco-600"></i> Add Ingredient / Supply
+                            </h3>
+                            <p id="ingredientFormSubtitle" class="text-[10px] text-slate-400 mt-1">Add food ingredients or reusable items such as spoons, containers and packaging.</p>
+                        </div>
+                        <span id="ingredientEditBadge" class="hidden text-[9px] font-extrabold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full shrink-0">Editing</span>
+                    </div>
+                    <input type="hidden" id="ingEditId" value="">
+                    <div class="space-y-2.5">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-semibold text-slate-600">Item Type</label>
+                                <select id="ingType" onchange="syncIngredientFormTypeUi()"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                                    <option value="ingredient">Ingredient</option>
+                                    <option value="supply">Packaging / Supply</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-semibold text-slate-600">Product</label>
+                                <select id="ingProductId"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label id="ingNameLabel" class="text-[11px] font-semibold text-slate-600">Ingredient Name</label>
                             <input type="text" id="ingName" placeholder="e.g. Butter, Marie Biscuit"
                                 class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                         </div>
-                        <div class="grid grid-cols-3 gap-2">
+                        <div class="grid grid-cols-2 gap-2">
                             <div>
-                                <label class="text-[10px] font-semibold text-slate-600">Price (RM)</label>
-                                <input type="number" id="ingPrice" placeholder="12.50" step="0.01"
+                                <label class="text-[10px] font-semibold text-slate-600">Package Price (RM)</label>
+                                <input type="number" id="ingPrice" placeholder="12.50" step="0.01" min="0"
                                     class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
                             <div>
-                                <label class="text-[10px] font-semibold text-slate-600">Pkg Weight (g)</label>
-                                <input type="number" id="ingPkgGrams" placeholder="250"
+                                <label class="text-[10px] font-semibold text-slate-600">Unit</label>
+                                <select id="ingUnit" onchange="syncIngredientFormTypeUi()"
+                                    class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                                    <option value="g">g</option>
+                                    <option value="kg">kg</option>
+                                    <option value="ml">ml</option>
+                                    <option value="l">L</option>
+                                    <option value="pcs">pcs</option>
+                                    <option value="pack">pack</option>
+                                    <option value="box">box</option>
+                                    <option value="set">set</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label id="ingPkgQtyLabel" class="text-[10px] font-semibold text-slate-600">Package Quantity (g)</label>
+                                <input type="number" id="ingPkgQty" placeholder="250" min="0" step="0.01"
                                     class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
                             <div>
-                                <label class="text-[10px] font-semibold text-slate-600">Used (g)</label>
-                                <input type="number" id="ingUsedGrams" placeholder="200"
+                                <label id="ingUsedQtyLabel" class="text-[10px] font-semibold text-slate-600">Used Quantity (g)</label>
+                                <input type="number" id="ingUsedQty" placeholder="200" min="0" step="0.01"
                                     class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
                         </div>
-                        <button onclick="handleAddIngredient()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 mt-1">
-                            <i class="fa-solid fa-plus"></i> Add Ingredient
-                        </button>
+                        <div class="flex gap-2 mt-1">
+                            <button id="ingredientSaveBtn" onclick="handleAddIngredient()" class="flex-1 bg-choco-700 hover:bg-choco-800 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-plus"></i> Add Item
+                            </button>
+                            <button id="ingredientCancelBtn" onclick="cancelIngredientEdit()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-xs transition border border-slate-200 items-center justify-center gap-2">
+                                <i class="fa-solid fa-xmark"></i> Cancel
+                            </button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="bg-white border border-choco-200 rounded-2xl overflow-hidden card-shadow">
-                    <div class="p-3 bg-choco-50/80 border-b border-choco-100 flex justify-between items-center">
-                        <span class="text-xs font-bold text-choco-900">Current Ingredients</span>
+                    <div class="p-3 bg-choco-50/80 border-b border-choco-100 flex justify-between items-center gap-2">
+                        <span class="text-xs font-bold text-choco-900">Current Ingredients & Supplies</span>
                         <span id="totalBatchCostBadge" class="text-xs font-bold text-choco-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">Total: RM 0.00</span>
                     </div>
                     <div id="ingredientList" class="divide-y divide-slate-100 text-xs"></div>
@@ -1204,7 +1248,7 @@
             isAdmin: false,
             sidebarCollapsed: localStorage.getItem('kblAdminSidebarCollapsed') !== 'false',
             adminPassword: 'password123',
-            activeTab: 'reviews',
+            activeTab: 'orders',
             starRating: 5,
             reviewPhotoBase64: null,
             qrPhotoBase64: null,
@@ -1822,6 +1866,7 @@
         function renderProductSelectors() {
             setSelectOptions('dashboardProductFilter', window.appState.filters.dashboardProduct, true);
             setSelectOptions('ingredientProductFilter', window.appState.filters.ingredientProduct, true);
+            syncIngredientProductOptions(document.getElementById('ingEditId')?.value ? document.getElementById('ingProductId')?.value : (window.appState.filters.ingredientProduct !== 'all' ? window.appState.filters.ingredientProduct : ''));
             setSelectOptions('salesProductFilter', window.appState.filters.salesProduct, true);
             renderOrderProductSelector();
             renderOrderProductAvailabilityAdmin();
@@ -1884,6 +1929,8 @@
             if (orderDateInput) orderDateInput.value = localDateStr();
 
             setupDatabaseListeners();
+            // Customer mode opens directly on the Order page. Admin login still redirects to Dashboard.
+            window.appState.activeTab = window.appState.isAdmin ? (pendingAdminTab === 'orders' ? 'orders' : 'dashboard') : 'orders';
             renderNavigation();
             renderAllViews();
             restorePendingOrderReceipt();
@@ -2093,9 +2140,9 @@
                 return;
             }
 
-            // Customer mode: normal three-button bottom navigation.
+            // Customer mode: Order is the default landing page.
             if (!['orders', 'reviews', 'pay'].includes(window.appState.activeTab)) {
-                window.appState.activeTab = 'reviews';
+                window.appState.activeTab = 'orders';
             }
 
             bottomContainer.className = 'bottom-nav-track justify-around min-w-full';
@@ -2140,7 +2187,7 @@
             window.appState.isAdmin = false;
             updateAuthHeader();
             showToast('Logged out of Admin Mode.', 'info');
-            switchTab('reviews');
+            switchTab('orders');
         };
 
         function updateAuthHeader() {
@@ -2303,6 +2350,8 @@
             window.appState.yieldCount = Number(p?.yieldCount || 10);
             const input = document.getElementById('batchYieldInput');
             if (input) input.value = window.appState.yieldCount;
+            syncIngredientProductOptions(productId || '');
+            if (!document.getElementById('ingEditId')?.value) resetIngredientForm();
             renderIngredients();
             updateCalculationsAndDashboard();
         };
@@ -2330,40 +2379,163 @@
             renderReviews();
         };
 
-        // ================= INGREDIENT COST =================
-        window.handleAddIngredient = async function() {
-            const name = document.getElementById('ingName').value.trim();
-            const price = parseFloat(document.getElementById('ingPrice').value);
-            const pkgGrams = parseFloat(document.getElementById('ingPkgGrams').value);
-            const usedGrams = parseFloat(document.getElementById('ingUsedGrams').value);
-            const productId = window.appState.filters.ingredientProduct === 'all' ? 'kek-batik' : window.appState.filters.ingredientProduct;
-            if (!productId) return showToast('Select a product first.', 'error');
-            if (!name || isNaN(price) || isNaN(pkgGrams) || isNaN(usedGrams) || pkgGrams <= 0 || usedGrams < 0) return showToast('Please fill out all ingredient details correctly.', 'error');
-            try {
-                await set(push(getDbRef('ingredients')), { name, price, pkgGrams, usedGrams, productId, createdAt: Date.now() });
-                showToast(`Added ${name} to ${getProductName(productId)}!`, 'success');
-                ['ingName', 'ingPrice', 'ingPkgGrams', 'ingUsedGrams'].forEach(id => document.getElementById(id).value = '');
-            } catch (err) { showToast(`Failed to add ${name}`, 'error'); }
+        // ================= INGREDIENT COST & SUPPLIES =================
+        function getIngredientEditorProductId() {
+            const selectValue = document.getElementById('ingProductId')?.value || '';
+            if (selectValue) return selectValue;
+            const filterValue = window.appState.filters.ingredientProduct;
+            if (filterValue && filterValue !== 'all') return filterValue;
+            return window.appState.products.find(p => p.active !== false)?.id || '';
+        }
+
+        function normalizeIngredientRecord(ing = {}) {
+            const itemType = ing.itemType === 'supply' ? 'supply' : 'ingredient';
+            const unit = String(ing.unit || (itemType === 'supply' ? 'pcs' : 'g')).toLowerCase();
+            const packageQty = Number(ing.packageQty ?? ing.pkgGrams ?? 0);
+            const usedQty = Number(ing.usedQty ?? ing.usedGrams ?? 0);
+            return { ...ing, itemType, unit, packageQty, usedQty };
+        }
+
+        function getIngredientCost(ing) {
+            const item = normalizeIngredientRecord(ing);
+            const price = Number(item.price || 0);
+            if (!item.packageQty || item.packageQty <= 0 || item.usedQty < 0) return 0;
+            const cost = (price / item.packageQty) * item.usedQty;
+            return Number.isFinite(cost) ? cost : 0;
+        }
+
+        function syncIngredientProductOptions(selected = '') {
+            const el = document.getElementById('ingProductId');
+            if (!el) return;
+            const current = selected || el.value || getIngredientEditorProductId();
+            const products = window.appState.products;
+            el.innerHTML = products.length
+                ? products.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}${p.active === false ? ' (Hidden)' : ''}</option>`).join('')
+                : '<option value="">No products</option>';
+            if ([...el.options].some(o => o.value === current)) el.value = current;
+            else if (el.options.length) el.value = el.options[0].value;
+        }
+
+        window.syncIngredientFormTypeUi = function() {
+            const type = document.getElementById('ingType')?.value || 'ingredient';
+            const unit = document.getElementById('ingUnit');
+            const nameLabel = document.getElementById('ingNameLabel');
+            const pkgLabel = document.getElementById('ingPkgQtyLabel');
+            const usedLabel = document.getElementById('ingUsedQtyLabel');
+            const nameInput = document.getElementById('ingName');
+            const currentUnit = unit?.value || (type === 'supply' ? 'pcs' : 'g');
+            if (type === 'supply') {
+                if (nameLabel) nameLabel.innerText = 'Supply / Packaging Name';
+                if (nameInput) nameInput.placeholder = 'e.g. Spoon, Container, Sticker';
+            } else {
+                if (nameLabel) nameLabel.innerText = 'Ingredient Name';
+                if (nameInput) nameInput.placeholder = 'e.g. Butter, Marie Biscuit';
+            }
+            if (pkgLabel) pkgLabel.innerText = `Package Quantity (${currentUnit})`;
+            if (usedLabel) usedLabel.innerText = `Used Quantity (${currentUnit})`;
         };
 
-        window.handleEditIngredient = async function(id) {
+        function resetIngredientForm() {
+            const editId = document.getElementById('ingEditId');
+            if (editId) editId.value = '';
+            const type = document.getElementById('ingType'); if (type) type.value = 'ingredient';
+            const name = document.getElementById('ingName'); if (name) name.value = '';
+            const price = document.getElementById('ingPrice'); if (price) price.value = '';
+            const unit = document.getElementById('ingUnit'); if (unit) unit.value = 'g';
+            const pkg = document.getElementById('ingPkgQty'); if (pkg) pkg.value = '';
+            const used = document.getElementById('ingUsedQty'); if (used) used.value = '';
+            const filterValue = window.appState.filters.ingredientProduct;
+            syncIngredientProductOptions(filterValue !== 'all' ? filterValue : '');
+            const title = document.getElementById('ingredientFormTitle');
+            if (title) title.innerHTML = '<i class="fa-solid fa-plus-circle text-choco-600"></i> Add Ingredient / Supply';
+            const subtitle = document.getElementById('ingredientFormSubtitle');
+            if (subtitle) subtitle.innerText = 'Add food ingredients or reusable items such as spoons, containers and packaging.';
+            document.getElementById('ingredientEditBadge')?.classList.add('hidden');
+            const save = document.getElementById('ingredientSaveBtn');
+            if (save) save.innerHTML = '<i class="fa-solid fa-plus"></i> Add Item';
+            const cancel = document.getElementById('ingredientCancelBtn');
+            if (cancel) { cancel.classList.add('hidden'); cancel.classList.remove('flex'); }
+            window.syncIngredientFormTypeUi();
+        }
+
+        window.handleAddIngredient = async function() {
+            const editId = document.getElementById('ingEditId')?.value.trim() || '';
+            const itemType = document.getElementById('ingType')?.value === 'supply' ? 'supply' : 'ingredient';
+            const name = document.getElementById('ingName')?.value.trim() || '';
+            const price = parseFloat(document.getElementById('ingPrice')?.value);
+            const unit = (document.getElementById('ingUnit')?.value || (itemType === 'supply' ? 'pcs' : 'g')).toLowerCase();
+            const packageQty = parseFloat(document.getElementById('ingPkgQty')?.value);
+            const usedQty = parseFloat(document.getElementById('ingUsedQty')?.value);
+            const productId = getIngredientEditorProductId();
+            if (!productId) return showToast('Select a product first.', 'error');
+            if (!name || !Number.isFinite(price) || price < 0 || !Number.isFinite(packageQty) || packageQty <= 0 || !Number.isFinite(usedQty) || usedQty < 0) {
+                return showToast('Please fill out the item details correctly.', 'error');
+            }
+            if (usedQty > packageQty) {
+                return showToast('Used quantity cannot be greater than package quantity.', 'error');
+            }
+            const payload = {
+                name, price, unit, packageQty, usedQty, productId, itemType,
+                // Keep legacy gram fields for older records/tools when this item uses grams.
+                pkgGrams: unit === 'g' ? packageQty : null,
+                usedGrams: unit === 'g' ? usedQty : null
+            };
+            try {
+                if (editId) {
+                    const existing = window.appState.ingredients.find(x => x.id === editId);
+                    await set(getDbRef(`ingredients/${editId}`), { ...existing, ...payload });
+                    showToast(`${name} updated successfully.`, 'success');
+                } else {
+                    await set(push(getDbRef('ingredients')), { ...payload, createdAt: Date.now() });
+                    showToast(`Added ${name} to ${getProductName(productId)}!`, 'success');
+                }
+                resetIngredientForm();
+                renderIngredients();
+            } catch (err) {
+                console.error('Save ingredient/supply failed:', err);
+                showToast(editId ? `Failed to update ${name}.` : `Failed to add ${name}.`, 'error');
+            }
+        };
+
+        window.handleEditIngredient = function(id) {
             const ing = window.appState.ingredients.find(x => x.id === id);
             if (!ing) return;
-            const nextPrice = prompt(`Edit price for ${ing.name} (RM)`, Number(ing.price || 0).toFixed(2));
-            if (nextPrice === null) return;
-            const price = parseFloat(nextPrice);
-            if (isNaN(price) || price < 0) return showToast('Please enter a valid price.', 'error');
-            try {
-                await set(getDbRef(`ingredients/${id}`), { ...ing, price });
-                showToast(`${ing.name} price updated.`, 'success');
-            } catch (err) { showToast('Failed to update ingredient price.', 'error'); }
+            const item = normalizeIngredientRecord(ing);
+            syncIngredientProductOptions(item.productId);
+            const editId = document.getElementById('ingEditId'); if (editId) editId.value = id;
+            const type = document.getElementById('ingType'); if (type) type.value = item.itemType;
+            const name = document.getElementById('ingName'); if (name) name.value = item.name || '';
+            const price = document.getElementById('ingPrice'); if (price) price.value = Number(item.price || 0).toFixed(2);
+            const unit = document.getElementById('ingUnit'); if (unit) unit.value = item.unit || 'g';
+            const pkg = document.getElementById('ingPkgQty'); if (pkg) pkg.value = item.packageQty || '';
+            const used = document.getElementById('ingUsedQty'); if (used) used.value = item.usedQty || '';
+            const title = document.getElementById('ingredientFormTitle');
+            if (title) title.innerHTML = '<i class="fa-solid fa-pen-to-square text-choco-600"></i> Edit Ingredient / Supply';
+            const subtitle = document.getElementById('ingredientFormSubtitle');
+            if (subtitle) subtitle.innerText = 'Update the name, type, product, price, unit, package quantity or used quantity.';
+            document.getElementById('ingredientEditBadge')?.classList.remove('hidden');
+            const save = document.getElementById('ingredientSaveBtn');
+            if (save) save.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
+            const cancel = document.getElementById('ingredientCancelBtn');
+            if (cancel) { cancel.classList.remove('hidden'); cancel.classList.add('flex'); }
+            window.syncIngredientFormTypeUi();
+            document.getElementById('ingredientFormCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('ingName')?.focus();
+        };
+
+        window.cancelIngredientEdit = function() {
+            resetIngredientForm();
         };
 
         window.handleDeleteIngredient = async function(id) {
+            const ing = window.appState.ingredients.find(x => x.id === id);
+            const label = ing?.name || 'this item';
+            if (!confirm(`Remove ${label}?`)) return;
             try {
                 await remove(getDbRef(`ingredients/${id}`));
-                showToast('Ingredient removed.', 'info');
-            } catch (err) { showToast('Failed to remove ingredient.', 'error'); }
+                if (document.getElementById('ingEditId')?.value === id) resetIngredientForm();
+                showToast('Item removed.', 'info');
+            } catch (err) { showToast('Failed to remove item.', 'error'); }
         };
 
         window.updateBatchYield = async function(val) {
@@ -2387,10 +2559,7 @@
         function calculateBatchCost(productId = null) {
             return window.appState.ingredients
                 .filter(ing => !productId || ing.productId === productId)
-                .reduce((total, ing) => {
-                    const cost = (Number(ing.price) / Number(ing.pkgGrams)) * Number(ing.usedGrams);
-                    return total + (isNaN(cost) ? 0 : cost);
-                }, 0);
+                .reduce((total, ing) => total + getIngredientCost(ing), 0);
         }
 
         function calculateCostPerBox(productId = null) {
@@ -2434,17 +2603,24 @@
         }
 
         function renderIngredientRow(ing) {
-            const cost = (Number(ing.price) / Number(ing.pkgGrams)) * Number(ing.usedGrams);
+            const item = normalizeIngredientRecord(ing);
+            const cost = getIngredientCost(item);
+            const isSupply = item.itemType === 'supply';
+            const typeLabel = isSupply ? 'Supply' : 'Ingredient';
+            const typeClass = isSupply ? 'text-amber-700 bg-amber-50 border-amber-200' : 'text-choco-700 bg-choco-50 border-choco-100';
             return `
-                <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
+                <div class="p-3 flex justify-between items-center gap-3 hover:bg-slate-50 transition">
                     <div class="min-w-0">
-                        <div class="font-bold text-choco-900 truncate">${escapeHtml(ing.name)}</div>
-                        <div class="text-[10px] text-slate-500">RM ${Number(ing.price || 0).toFixed(2)} / ${Number(ing.pkgGrams || 0)}g · Used ${Number(ing.usedGrams || 0)}g</div>
+                        <div class="flex items-center gap-1.5 min-w-0">
+                            <div class="font-bold text-choco-900 truncate">${escapeHtml(item.name)}</div>
+                            <span class="shrink-0 text-[8px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded-full border ${typeClass}">${typeLabel}</span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">RM ${Number(item.price || 0).toFixed(2)} / ${Number(item.packageQty || 0)} ${escapeHtml(item.unit)} · Used ${Number(item.usedQty || 0)} ${escapeHtml(item.unit)}</div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0 ml-2">
                         <span class="font-bold text-rose-700">RM ${cost.toFixed(2)}</span>
-                        <button onclick="handleEditIngredient('${ing.id}')" title="Edit price" class="text-slate-400 hover:text-choco-700 transition p-1"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="handleDeleteIngredient('${ing.id}')" title="Delete" class="text-slate-300 hover:text-rose-600 transition p-1"><i class="fa-solid fa-trash-can"></i></button>
+                        <button onclick="handleEditIngredient('${escapeHtml(item.id)}')" title="Edit all item info" class="text-slate-400 hover:text-choco-700 transition p-1.5"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="handleDeleteIngredient('${escapeHtml(item.id)}')" title="Delete" class="text-slate-300 hover:text-rose-600 transition p-1.5"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                 </div>`;
         }
@@ -3960,6 +4136,7 @@
             renderSalesMonthFilter();
             renderProducts();
             renderIngredients();
+            if (!document.getElementById('ingEditId')?.value) resetIngredientForm();
             renderSales();
             renderOrders();
             renderOrderCapacity();

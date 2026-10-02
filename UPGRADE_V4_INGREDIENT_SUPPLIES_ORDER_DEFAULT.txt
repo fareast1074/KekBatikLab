@@ -1,0 +1,12 @@
+KekBatikLab — V4 Update
+
+1. Ingredients / Supplies
+- Edit every saved item field: type, product, name, package price, unit, package quantity, and used quantity.
+- Added Packaging / Supply item type for items such as spoons and containers.
+- Cost calculation now works with g, kg, ml, L, pcs, pack, box, or set.
+- Existing records using pkgGrams/usedGrams continue to work through backward-compatible normalization.
+
+2. Customer Order Landing Page
+- Customer mode now opens directly on the Order page.
+- The customer navigation fallback and logout return to Order.
+- Admin login behavior remains separate and continues to use Dashboard unless an admin Orders tab was requested.
