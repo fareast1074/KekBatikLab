@@ -424,63 +424,38 @@
                         <i class="fa-solid fa-plus-circle text-choco-600"></i> Add Ingredient
                     </h3>
                     <div class="space-y-2.5">
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-[10px] font-semibold text-slate-600">Type</label>
-                                <select id="ingType" onchange="syncIngredientUnitFields()" class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
-                                    <option value="ingredient">Ingredient</option>
-                                    <option value="other">Other (Container / Spoon)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-semibold text-slate-600">Unit</label>
-                                <select id="ingUnit" onchange="syncIngredientUnitFields()" class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50 font-bold">
-                                    <option value="g">gram (g)</option>
-                                    <option value="kg">kilogram (kg)</option>
-                                    <option value="pcs">pieces (pcs)</option>
-                                </select>
-                            </div>
-                        </div>
                         <div>
-                            <label class="text-[11px] font-semibold text-slate-600">Name</label>
-                            <input type="text" id="ingName" placeholder="e.g. Butter, Marie Biscuit, Container, Spoon"
+                            <label class="text-[11px] font-semibold text-slate-600">Ingredient Name</label>
+                            <input type="text" id="ingName" placeholder="e.g. Butter, Marie Biscuit"
                                 class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                         </div>
                         <div class="grid grid-cols-3 gap-2">
                             <div>
                                 <label class="text-[10px] font-semibold text-slate-600">Price (RM)</label>
-                                <input type="number" id="ingPrice" placeholder="12.50" step="0.01" min="0"
+                                <input type="number" id="ingPrice" placeholder="12.50" step="0.01"
                                     class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
                             <div>
-                                <label id="ingPkgLabel" class="text-[10px] font-semibold text-slate-600">Package (g)</label>
-                                <input type="number" id="ingPkgGrams" placeholder="250" step="0.01" min="0.01"
+                                <label class="text-[10px] font-semibold text-slate-600">Pkg Weight (g)</label>
+                                <input type="number" id="ingPkgGrams" placeholder="250"
                                     class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
                             <div>
-                                <label id="ingUsedLabel" class="text-[10px] font-semibold text-slate-600">Used (g)</label>
-                                <input type="number" id="ingUsedGrams" placeholder="200" step="0.01" min="0"
+                                <label class="text-[10px] font-semibold text-slate-600">Used (g)</label>
+                                <input type="number" id="ingUsedGrams" placeholder="200"
                                     class="w-full mt-1 border border-slate-200 rounded-xl px-2.5 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
                         </div>
                         <button onclick="handleAddIngredient()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 mt-1">
-                            <i class="fa-solid fa-plus"></i> Add to Recipe & Cost
+                            <i class="fa-solid fa-plus"></i> Add Ingredient
                         </button>
                     </div>
                 </div>
 
                 <div class="bg-white border border-choco-200 rounded-2xl overflow-hidden card-shadow">
-                    <div class="p-3 bg-choco-50/80 border-b border-choco-100 flex flex-wrap justify-between items-center gap-2">
-                        <div>
-                            <span class="text-xs font-bold text-choco-900">Recipe Cost Breakdown</span>
-                            <div class="text-[9px] text-slate-500 mt-0.5">Ingredients + packaging / other items are included in total cost.</div>
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <span id="totalBatchCostBadge" class="text-xs font-bold text-choco-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">Total: RM 0.00</span>
-                            <button onclick="downloadRecipeImage()" class="text-[10px] font-bold text-white bg-choco-700 hover:bg-choco-800 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1.5">
-                                <i class="fa-solid fa-image"></i> Recipe Image
-                            </button>
-                        </div>
+                    <div class="p-3 bg-choco-50/80 border-b border-choco-100 flex justify-between items-center">
+                        <span class="text-xs font-bold text-choco-900">Current Ingredients</span>
+                        <span id="totalBatchCostBadge" class="text-xs font-bold text-choco-700 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-full">Total: RM 0.00</span>
                     </div>
                     <div id="ingredientList" class="divide-y divide-slate-100 text-xs"></div>
                 </div>
@@ -2355,81 +2330,33 @@
             renderReviews();
         };
 
-        // ================= INGREDIENT + OTHER COSTS =================
-        function getCostUnit(ing) {
-            const unit = String(ing?.unit || '').toLowerCase();
-            if (unit === 'kg' || unit === 'pcs' || unit === 'g') return unit;
-            return ing?.type === 'other' ? 'pcs' : 'g';
-        }
-
-        function normalizeCostQuantity(value, unit) {
-            const n = Number(value || 0);
-            if (unit === 'kg') return n * 1000;
-            return n;
-        }
-
-        function syncIngredientUnitFields() {
-            const type = document.getElementById('ingType')?.value || 'ingredient';
-            const unit = document.getElementById('ingUnit');
-            if (!unit) return;
-            if (type === 'other' && unit.value === 'g') unit.value = 'pcs';
-            if (type === 'ingredient' && unit.value === 'pcs') unit.value = 'g';
-            const selected = unit.value;
-            const suffix = selected === 'kg' ? 'kg' : selected === 'pcs' ? 'pcs' : 'g';
-            const pkg = document.getElementById('ingPkgLabel');
-            const used = document.getElementById('ingUsedLabel');
-            if (pkg) pkg.innerText = `Package (${suffix})`;
-            if (used) used.innerText = `Used (${suffix})`;
-        }
-        window.syncIngredientUnitFields = syncIngredientUnitFields;
-
+        // ================= INGREDIENT COST =================
         window.handleAddIngredient = async function() {
             const name = document.getElementById('ingName').value.trim();
             const price = parseFloat(document.getElementById('ingPrice').value);
             const pkgGrams = parseFloat(document.getElementById('ingPkgGrams').value);
             const usedGrams = parseFloat(document.getElementById('ingUsedGrams').value);
-            const type = document.getElementById('ingType')?.value || 'ingredient';
-            const unit = document.getElementById('ingUnit')?.value || (type === 'other' ? 'pcs' : 'g');
             const productId = window.appState.filters.ingredientProduct === 'all' ? 'kek-batik' : window.appState.filters.ingredientProduct;
             if (!productId) return showToast('Select a product first.', 'error');
-            if (!name || isNaN(price) || isNaN(pkgGrams) || isNaN(usedGrams) || pkgGrams <= 0 || usedGrams < 0 || usedGrams > pkgGrams) return showToast('Please fill out valid price and quantity details. Used quantity cannot exceed package quantity.', 'error');
+            if (!name || isNaN(price) || isNaN(pkgGrams) || isNaN(usedGrams) || pkgGrams <= 0 || usedGrams < 0) return showToast('Please fill out all ingredient details correctly.', 'error');
             try {
-                await set(push(getDbRef('ingredients')), { name, price, pkgGrams, usedGrams, unit, type, productId, createdAt: Date.now() });
+                await set(push(getDbRef('ingredients')), { name, price, pkgGrams, usedGrams, productId, createdAt: Date.now() });
                 showToast(`Added ${name} to ${getProductName(productId)}!`, 'success');
                 ['ingName', 'ingPrice', 'ingPkgGrams', 'ingUsedGrams'].forEach(id => document.getElementById(id).value = '');
-                document.getElementById('ingType').value = 'ingredient';
-                document.getElementById('ingUnit').value = 'g';
-                syncIngredientUnitFields();
             } catch (err) { showToast(`Failed to add ${name}`, 'error'); }
         };
 
         window.handleEditIngredient = async function(id) {
             const ing = window.appState.ingredients.find(x => x.id === id);
             if (!ing) return;
-            const currentUnit = getCostUnit(ing);
             const nextPrice = prompt(`Edit price for ${ing.name} (RM)`, Number(ing.price || 0).toFixed(2));
             if (nextPrice === null) return;
-            const nextPkg = prompt(`Edit package quantity for ${ing.name} (${currentUnit})`, Number(ing.pkgGrams || 0));
-            if (nextPkg === null) return;
-            const nextUsed = prompt(`Edit used quantity for ${ing.name} (${currentUnit})`, Number(ing.usedGrams || 0));
-            if (nextUsed === null) return;
-            const nextType = prompt(`Type: ingredient or other`, ing.type === 'other' ? 'other' : 'ingredient');
-            if (nextType === null) return;
-            const requestedUnit = prompt(`Unit: g, kg or pcs`, currentUnit);
-            if (requestedUnit === null) return;
             const price = parseFloat(nextPrice);
-            const pkgGrams = parseFloat(nextPkg);
-            const usedGrams = parseFloat(nextUsed);
-            const type = String(nextType).trim().toLowerCase() === 'other' ? 'other' : 'ingredient';
-            let unit = String(requestedUnit).trim().toLowerCase();
-            if (!['g', 'kg', 'pcs'].includes(unit)) return showToast('Unit must be g, kg or pcs.', 'error');
-            if (type === 'other' && unit === 'g') unit = 'pcs';
-            if (type === 'ingredient' && unit === 'pcs') unit = 'g';
-            if (isNaN(price) || price < 0 || isNaN(pkgGrams) || pkgGrams <= 0 || isNaN(usedGrams) || usedGrams < 0 || usedGrams > pkgGrams) return showToast('Invalid values. Used quantity must not exceed package quantity.', 'error');
+            if (isNaN(price) || price < 0) return showToast('Please enter a valid price.', 'error');
             try {
-                await set(getDbRef(`ingredients/${id}`), { ...ing, price, pkgGrams, usedGrams, type, unit });
-                showToast(`${ing.name} cost details updated.`, 'success');
-            } catch (err) { showToast('Failed to update cost item.', 'error'); }
+                await set(getDbRef(`ingredients/${id}`), { ...ing, price });
+                showToast(`${ing.name} price updated.`, 'success');
+            } catch (err) { showToast('Failed to update ingredient price.', 'error'); }
         };
 
         window.handleDeleteIngredient = async function(id) {
@@ -2457,21 +2384,13 @@
             renderIngredients();
         };
 
-        function calculateItemCost(ing) {
-            const pkg = Number(ing?.pkgGrams || 0);
-            const used = Number(ing?.usedGrams || 0);
-            const price = Number(ing?.price || 0);
-            const unit = getCostUnit(ing);
-            const pkgBase = normalizeCostQuantity(pkg, unit);
-            const usedBase = normalizeCostQuantity(used, unit);
-            const cost = pkgBase > 0 ? (price / pkgBase) * usedBase : 0;
-            return Number.isFinite(cost) ? cost : 0;
-        }
-
         function calculateBatchCost(productId = null) {
             return window.appState.ingredients
                 .filter(ing => !productId || ing.productId === productId)
-                .reduce((total, ing) => total + calculateItemCost(ing), 0);
+                .reduce((total, ing) => {
+                    const cost = (Number(ing.price) / Number(ing.pkgGrams)) * Number(ing.usedGrams);
+                    return total + (isNaN(cost) ? 0 : cost);
+                }, 0);
         }
 
         function calculateCostPerBox(productId = null) {
@@ -2494,7 +2413,7 @@
             if (calcEl) calcEl.innerText = selectedProduct ? `RM ${costPerBox.toFixed(2)}` : 'Select product';
 
             if (!filtered.length) {
-                listEl.innerHTML = `<div class="p-5 text-center text-slate-400 italic">No cost items ${selectedProduct ? `for ${escapeHtml(getProductName(selectedProduct))}` : 'added yet'}.</div>`;
+                listEl.innerHTML = `<div class="p-5 text-center text-slate-400 italic">No ingredients ${selectedProduct ? `for ${escapeHtml(getProductName(selectedProduct))}` : 'added yet'}.</div>`;
                 return;
             }
 
@@ -2506,130 +2425,29 @@
                             <div class="font-bold text-choco-900"><i class="fa-solid ${escapeHtml(group.product.icon || 'fa-cookie-bite')} mr-1"></i>${escapeHtml(group.product.name)}</div>
                             <span class="text-[10px] font-bold text-choco-700">RM ${calculateCostPerBox(group.product.id).toFixed(2)}/box</span>
                         </div>
-                        ${renderIngredientSections(group.items)}
+                        ${group.items.map(ing => renderIngredientRow(ing)).join('')}
                     </div>
                 `).join('');
             } else {
-                listEl.innerHTML = renderIngredientSections(filtered);
+                listEl.innerHTML = filtered.map(ing => renderIngredientRow(ing)).join('');
             }
         }
 
-        function renderIngredientSections(items) {
-            const ingredients = items.filter(i => (i.type || 'ingredient') !== 'other');
-            const others = items.filter(i => (i.type || 'ingredient') === 'other');
-            const ingredientCost = ingredients.reduce((sum, i) => sum + calculateItemCost(i), 0);
-            const otherCost = others.reduce((sum, i) => sum + calculateItemCost(i), 0);
-            return `
-                <div>
-                    <div class="px-3 py-2 bg-white/70 flex justify-between items-center border-b border-choco-100">
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-choco-800"><i class="fa-solid fa-carrot mr-1"></i>Ingredients</span>
-                        <span class="text-[10px] font-bold text-choco-700">RM ${ingredientCost.toFixed(2)}</span>
-                    </div>
-                    ${ingredients.length ? ingredients.map(renderIngredientRow).join('') : '<div class="p-3 text-[10px] text-slate-400 italic">No ingredients added.</div>'}
-                </div>
-                <div>
-                    <div class="px-3 py-2 bg-slate-50 flex justify-between items-center border-y border-slate-100">
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-600"><i class="fa-solid fa-box-open mr-1"></i>Others / Packaging</span>
-                        <span class="text-[10px] font-bold text-slate-700">RM ${otherCost.toFixed(2)}</span>
-                    </div>
-                    ${others.length ? others.map(renderIngredientRow).join('') : '<div class="p-3 text-[10px] text-slate-400 italic">No container, spoon or other costs added.</div>'}
-                </div>`;
-        }
-
         function renderIngredientRow(ing) {
-            const cost = calculateItemCost(ing);
-            const unit = getCostUnit(ing);
-            const typeLabel = (ing.type || 'ingredient') === 'other' ? 'Other' : 'Ingredient';
+            const cost = (Number(ing.price) / Number(ing.pkgGrams)) * Number(ing.usedGrams);
             return `
                 <div class="p-3 flex justify-between items-center hover:bg-slate-50 transition">
                     <div class="min-w-0">
-                        <div class="font-bold text-choco-900 truncate">${escapeHtml(ing.name)} <span class="text-[8px] font-bold text-slate-400 uppercase ml-1">${typeLabel}</span></div>
-                        <div class="text-[10px] text-slate-500">RM ${Number(ing.price || 0).toFixed(2)} / ${Number(ing.pkgGrams || 0)}${escapeHtml(unit)} · Used ${Number(ing.usedGrams || 0)}${escapeHtml(unit)}</div>
+                        <div class="font-bold text-choco-900 truncate">${escapeHtml(ing.name)}</div>
+                        <div class="text-[10px] text-slate-500">RM ${Number(ing.price || 0).toFixed(2)} / ${Number(ing.pkgGrams || 0)}g · Used ${Number(ing.usedGrams || 0)}g</div>
                     </div>
                     <div class="flex items-center gap-2 shrink-0 ml-2">
                         <span class="font-bold text-rose-700">RM ${cost.toFixed(2)}</span>
-                        <button onclick="handleEditIngredient('${ing.id}')" title="Edit price and quantity" class="text-slate-400 hover:text-choco-700 transition p-1"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="handleEditIngredient('${ing.id}')" title="Edit price" class="text-slate-400 hover:text-choco-700 transition p-1"><i class="fa-solid fa-pen"></i></button>
                         <button onclick="handleDeleteIngredient('${ing.id}')" title="Delete" class="text-slate-300 hover:text-rose-600 transition p-1"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                 </div>`;
         }
-
-        window.downloadRecipeImage = function() {
-            const selectedId = window.appState.filters.ingredientProduct;
-            const productId = selectedId && selectedId !== 'all' ? selectedId : null;
-            if (!productId) return showToast('Select a specific product first.', 'info');
-            const product = getProduct(productId);
-            if (!product) return showToast('Selected product was not found.', 'error');
-            const items = window.appState.ingredients.filter(i => i.productId === productId);
-            if (!items.length) return showToast('Add ingredients first before downloading the recipe.', 'info');
-
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const width = 1080;
-            const rowH = 74;
-            const ingredients = items.filter(i => (i.type || 'ingredient') !== 'other');
-            const others = items.filter(i => (i.type || 'ingredient') === 'other');
-            const rows = ingredients.length + others.length + 6;
-            canvas.width = width;
-            canvas.height = Math.max(700, 260 + rows * rowH);
-
-            ctx.fillStyle = '#fdf8f6';
-            ctx.fillRect(0, 0, width, canvas.height);
-            ctx.fillStyle = '#6b4226';
-            ctx.fillRect(0, 0, width, 150);
-            ctx.fillStyle = '#fff8ef';
-            ctx.font = 'bold 48px Arial';
-            ctx.fillText(product.name, 60, 68);
-            ctx.font = '24px Arial';
-            ctx.fillText(`Recipe · Yield ${Number(product.yieldCount || 10)} boxes`, 60, 112);
-
-            let y = 205;
-            const drawSection = (title, sectionItems) => {
-                ctx.fillStyle = '#8c5a38';
-                ctx.font = 'bold 28px Arial';
-                ctx.fillText(title, 60, y);
-                y += 48;
-                if (!sectionItems.length) {
-                    ctx.fillStyle = '#777'; ctx.font = '20px Arial'; ctx.fillText('None', 75, y); y += rowH; return;
-                }
-                sectionItems.forEach((ing) => {
-                    const unit = getCostUnit(ing);
-                    const cost = calculateItemCost(ing);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(50, y - 30, width - 100, 58);
-                    ctx.fillStyle = '#28170c';
-                    ctx.font = 'bold 22px Arial';
-                    ctx.fillText(String(ing.name || ''), 75, y + 2);
-                    ctx.fillStyle = '#666';
-                    ctx.font = '18px Arial';
-                    ctx.fillText(`${Number(ing.usedGrams || 0)}${unit} used · RM ${cost.toFixed(2)}`, 500, y + 2);
-                    y += rowH;
-                });
-            };
-            drawSection('INGREDIENTS', ingredients);
-            drawSection('OTHERS / PACKAGING', others);
-
-            const total = calculateBatchCost(productId);
-            y += 12;
-            ctx.fillStyle = '#28170c';
-            ctx.fillRect(50, y - 34, width - 100, 82);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 28px Arial';
-            ctx.fillText('TOTAL BATCH COST', 75, y + 4);
-            ctx.textAlign = 'right';
-            ctx.fillText(`RM ${total.toFixed(2)}  ·  RM ${calculateCostPerBox(productId).toFixed(2)} / box`, width - 75, y + 4);
-            ctx.textAlign = 'left';
-            y += 105;
-            ctx.fillStyle = '#888';
-            ctx.font = '16px Arial';
-            ctx.fillText('KekBatikLab · Recipe Cost Sheet', 60, y);
-
-            const link = document.createElement('a');
-            link.download = `${slugify(product.name)}-recipe.png`;
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            showToast('Recipe image downloaded.', 'success');
-        };
 
         // ================= SALES =================
         function renderSalesMonthFilter() {
