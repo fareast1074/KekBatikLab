@@ -329,6 +329,16 @@
                             <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Month</label>
                             <select id="dashboardMonthFilter" onchange="applyDashboardFilters()" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold bg-slate-50/50 focus:ring-2 focus:ring-choco-600 focus:outline-none"></select>
                         </div>
+                        <div class="col-span-2">
+                            <label class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Week</label>
+                            <select id="dashboardWeekFilter" onchange="applyDashboardFilters()" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold bg-slate-50/50 focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                                <option value="all">All Weeks</option>
+                                <option value="1">Week 1 · Days 1–7</option>
+                                <option value="2">Week 2 · Days 8–14</option>
+                                <option value="3">Week 3 · Days 15–21</option>
+                                <option value="4">Week 4 · Days 22–End</option>
+                            </select>
+                        </div>
                     </div>
                     <div id="dashboardFilterHint" class="text-[10px] text-slate-400 flex items-center gap-1.5">
                         <i class="fa-solid fa-circle-info"></i> Dashboard totals update from the selected product and month.
@@ -1261,6 +1271,7 @@
             filters: {
                 dashboardProduct: 'all',
                 dashboardMonth: 'all',
+                dashboardWeek: 'all',
                 ingredientProduct: 'kek-batik',
                 salesProduct: 'all',
                 salesMonth: 'all',
@@ -2342,6 +2353,7 @@
         window.applyDashboardFilters = function() {
             window.appState.filters.dashboardProduct = document.getElementById('dashboardProductFilter')?.value || 'all';
             window.appState.filters.dashboardMonth = document.getElementById('dashboardMonthFilter')?.value || 'all';
+            window.appState.filters.dashboardWeek = document.getElementById('dashboardWeekFilter')?.value || 'all';
             updateCalculationsAndDashboard();
         };
         window.applyIngredientFilter = function() {
@@ -3701,13 +3713,36 @@
         }
 
         // ================= DASHBOARD =================
+        function getDashboardWeekNumber(dateString) {
+            const match = String(dateString || '').match(/^\d{4}-\d{2}-(\d{2})/);
+            if (!match) return 0;
+            const day = Number(match[1]);
+            if (day >= 1 && day <= 7) return 1;
+            if (day >= 8 && day <= 14) return 2;
+            if (day >= 15 && day <= 21) return 3;
+            if (day >= 22) return 4;
+            return 0;
+        }
+
+        function getDashboardWeekLabel(week) {
+            return ({
+                '1': 'Week 1 (Days 1–7)',
+                '2': 'Week 2 (Days 8–14)',
+                '3': 'Week 3 (Days 15–21)',
+                '4': 'Week 4 (Days 22–End)'
+            })[String(week)] || 'All Weeks';
+        }
+
         function getDashboardSales() {
             const product = window.appState.filters.dashboardProduct;
             const month = window.appState.filters.dashboardMonth;
+            const week = window.appState.filters.dashboardWeek || 'all';
             return window.appState.sales.filter(s => {
+                const date = String(s.date || '');
                 const productOk = product === 'all' || s.productId === product;
-                const monthOk = month === 'all' || String(s.date || '').startsWith(month);
-                return productOk && monthOk;
+                const monthOk = month === 'all' || date.startsWith(month);
+                const weekOk = week === 'all' || String(getDashboardWeekNumber(date)) === String(week);
+                return productOk && monthOk && weekOk;
             });
         }
 
@@ -3749,7 +3784,7 @@
             const batchText = document.getElementById('batchCostYieldText');
             if (batchText) batchText.innerText = selectedProduct === 'all' ? 'Multiple products' : `RM ${calculateCostPerBox(selectedProduct).toFixed(2)} / Box`;
             const hint = document.getElementById('dashboardFilterHint');
-            if (hint) hint.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${selectedProduct === 'all' ? 'Showing all products' : `Showing ${escapeHtml(getProductName(selectedProduct))}`} · ${window.appState.filters.dashboardMonth === 'all' ? 'all recorded months' : escapeHtml(window.appState.filters.dashboardMonth)}`;
+            if (hint) hint.innerHTML = `<i class="fa-solid fa-circle-info"></i> ${selectedProduct === 'all' ? 'Showing all products' : `Showing ${escapeHtml(getProductName(selectedProduct))}`} · ${window.appState.filters.dashboardMonth === 'all' ? 'all recorded months' : escapeHtml(window.appState.filters.dashboardMonth)} · ${getDashboardWeekLabel(window.appState.filters.dashboardWeek || 'all')}`;
             renderProductSummary();
             if (window.appState.activeTab === 'dashboard') renderProfitChart();
         }
@@ -3758,9 +3793,10 @@
             const list = document.getElementById('productSummaryList');
             if (!list) return;
             const month = window.appState.filters.dashboardMonth;
+            const week = window.appState.filters.dashboardWeek || 'all';
             const activeProducts = window.appState.products;
             const rows = activeProducts.map(p => {
-                const sales = window.appState.sales.filter(s => s.productId === p.id && (month === 'all' || String(s.date || '').startsWith(month)));
+                const sales = window.appState.sales.filter(s => s.productId === p.id && (month === 'all' || String(s.date || '').startsWith(month)) && (week === 'all' || String(getDashboardWeekNumber(s.date)) === String(week)));
                 const m = salesMetrics(sales);
                 return { p, ...m };
             });
