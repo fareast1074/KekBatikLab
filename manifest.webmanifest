@@ -1,10 +1,12 @@
 {
   "name": "KekBatikLab",
   "short_name": "KekBatikLab",
+  "id": "./",
   "description": "KekBatikLab order and sales app",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "prefer_related_applications": false,
   "background_color": "#2c1b12",
   "theme_color": "#6b4226",
   "icons": [

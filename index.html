@@ -11,6 +11,18 @@
     <link rel="manifest" href="./manifest.webmanifest">
     <link rel="apple-touch-icon" href="./icon-192.png">
 
+    <script>
+        // Register the PWA service worker for every visitor, not only admins.
+        // This is required for Chrome Android to recognize the site as installable.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' })
+                    .then(reg => console.info('[KekBatikLab PWA] Service worker registered:', reg.scope))
+                    .catch(err => console.warn('[KekBatikLab PWA] Service worker registration failed:', err));
+            });
+        }
+    </script>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 

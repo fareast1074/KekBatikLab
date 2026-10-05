@@ -35,6 +35,13 @@ firebase.initializeApp({
   measurementId: 'G-XNSRZWZZXZ'
 });
 
+// Minimal fetch handler so Chrome can recognize this as a PWA service worker.
+// Network requests stay online-first; Firebase Messaging continues to work below.
+self.addEventListener('fetch', (event) => {
+  if (event.request.method !== 'GET') return;
+  event.respondWith(fetch(event.request));
+});
+
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
