@@ -1,0 +1,22 @@
+KekBatikLab Upgrade V5 — 7-Day Ordering, Place-Based COD, and Customer Gallery
+
+What's new
+1. Customers can browse the Gallery tab, see each active product picture and price, and tap Order Now to jump into the order form with that product selected.
+2. Admins can open Gallery and upload a photo for each product. The image is resized/compressed in the browser and saved on the product record in Firebase Realtime Database, so it also appears in the order product selector.
+3. The order calendar displays the next seven consecutive dates and no longer excludes Saturdays or Sundays. Existing admin product schedules and closed-date settings are still enforced.
+4. Admin Settings now has Delivery Places & COD Settings. Admins can add/edit/delete places and configure a minimum number of boxes, optional minimum product subtotal (RM), and a COD fee calculation (flat RM fee or percentage of product subtotal).
+5. Customers choose a configured place in the order form. The live breakdown shows product subtotal, COD charge, and final total. Orders below the selected place's minimum are blocked with a clear message.
+6. Saved orders retain the selected place and the product subtotal/COD fee breakdown. Sales analytics continue to count the product subtotal, not the COD charge.
+
+Setup after deploying
+- Sign in as Admin and open Settings → Delivery Places & COD Settings.
+- Add the place/area names you serve and configure the minimum order and COD fee for each one.
+- Open Gallery as Admin, select each product, upload its photo, and save it.
+- Customers can then use Gallery → Order Now or go directly to Order and choose a place.
+
+Firebase paths added/used
+- Product images: kekBatikLabApp/products/{productId}/imageUrl
+- Delivery/COD places: kekBatikLabApp/settings/checkout_config/places/{placeId}
+
+Note
+The app's existing Firebase configuration and authentication flow are preserved. The updated UI was syntax-checked, but live saving/loading should be verified on the deployed app with its Firebase Realtime Database rules and Anonymous Authentication enabled.

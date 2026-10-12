@@ -248,6 +248,9 @@
             0% { transform: scale(0.35) rotate(-18deg); opacity: 0; }
             100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
+        .gallery-product-card { overflow: hidden; transition: transform 160ms ease, box-shadow 160ms ease; }
+        .gallery-product-card:active { transform: scale(.99); }
+        .gallery-product-image { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #f8efeb; }
         .order-skeleton {
             position: relative;
             overflow: hidden;
@@ -682,9 +685,9 @@
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h3 class="text-xs font-bold uppercase tracking-wider text-choco-900 flex items-center gap-1.5"><i class="fa-solid fa-calendar-days text-choco-600"></i> Order Calendar</h3>
-                            <p class="text-[10px] text-slate-500 mt-1">Each day shows how many boxes remain for every scheduled product. Full or closed dates cannot be selected by customers.</p>
+                            <p class="text-[10px] text-slate-500 mt-1">Order any day from Monday to Sunday. Each date shows product availability; closed or full dates cannot be selected.</p>
                         </div>
-                        <span class="text-[9px] font-bold text-choco-700 bg-choco-50 border border-choco-100 px-2 py-1 rounded-full shrink-0">5 Working Days</span>
+                        <span class="text-[9px] font-bold text-choco-700 bg-choco-50 border border-choco-100 px-2 py-1 rounded-full shrink-0">7 Days / Week</span>
                     </div>
                     <div id="orderCalendarGrid" class="grid grid-cols-2 gap-2"></div>
                 </div>
@@ -780,6 +783,14 @@
                             </div>
                         </div>
 
+                        <div class="rounded-2xl border border-choco-100 bg-choco-50/60 p-3 space-y-2">
+                            <label for="orderPlace" class="text-[11px] font-semibold text-slate-700"><i class="fa-solid fa-location-dot text-choco-600 mr-1"></i>Delivery / COD Place</label>
+                            <select id="orderPlace" onchange="renderOrderPriceSummary()" class="w-full border border-slate-200 rounded-xl px-3 py-3 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                                <option value="">Choose your place</option>
+                            </select>
+                            <div id="orderPlaceDetails" class="text-[10px] leading-relaxed text-slate-500">Choose a place to view the minimum order and COD charge.</div>
+                        </div>
+
                         <div id="orderPriceSummary" class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5">
                             <div class="flex items-end justify-between gap-3">
                                 <div class="min-w-0">
@@ -791,6 +802,11 @@
                                     <div class="text-[9px] uppercase tracking-wider font-bold text-amber-700">Total</div>
                                     <div id="orderTotalPrice" class="text-2xl font-extrabold text-choco-900 mt-0.5 tabular-nums">RM 0.00</div>
                                 </div>
+                            </div>
+                            <div class="mt-3 pt-2.5 border-t border-amber-200/80 space-y-1.5 text-[10px]">
+                                <div class="flex items-center justify-between gap-3"><span class="text-slate-600">Product subtotal</span><span id="orderSubtotalAmount" class="font-bold text-choco-900">RM 0.00</span></div>
+                                <div class="flex items-center justify-between gap-3"><span id="orderCodLabel" class="text-slate-600">COD charge</span><span id="orderCodChargeAmount" class="font-bold text-choco-900">RM 0.00</span></div>
+                                <div id="orderMinimumHint" class="text-[9px] text-slate-500 pt-1">Choose a place to calculate your final total.</div>
                             </div>
                         </div>
                         <div>
@@ -837,6 +853,37 @@
                 </div>
             </section>
 
+
+            <!-- ================= CUSTOMER PRODUCT GALLERY TAB ================= -->
+            <section id="tab-gallery" class="tab-content hidden space-y-4">
+                <div class="rounded-3xl overflow-hidden bg-gradient-to-br from-choco-800 via-choco-700 to-choco-900 text-amber-50 p-5 shadow-lg">
+                    <div class="text-[9px] uppercase tracking-[0.22em] font-extrabold text-amber-200/75">Made with love</div>
+                    <h2 class="font-serif text-2xl font-bold mt-1">Cake Gallery</h2>
+                    <p class="text-[11px] text-amber-100/80 mt-1">Take a look at our desserts. Prices are shown below each product.</p>
+                </div>
+
+                <div id="galleryAdminUploadCard" class="hidden bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-choco-900 flex items-center gap-2"><i class="fa-solid fa-camera text-choco-600"></i> Manage Gallery Pictures</h3>
+                        <p class="text-[10px] leading-relaxed text-slate-500 mt-1">Choose a product and upload its photo. The picture will appear in the customer gallery and product order selector.</p>
+                    </div>
+                    <div>
+                        <label for="galleryProductSelect" class="text-[11px] font-semibold text-slate-600">Product</label>
+                        <select id="galleryProductSelect" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50 focus:ring-2 focus:ring-choco-600 focus:outline-none"></select>
+                    </div>
+                    <div>
+                        <label for="galleryImageFile" class="text-[11px] font-semibold text-slate-600">Product Picture</label>
+                        <input id="galleryImageFile" type="file" accept="image/*" onchange="handleGalleryImageSelected(event)" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 file:mr-3 file:border-0 file:bg-choco-100 file:text-choco-800 file:px-3 file:py-1.5 file:rounded-lg">
+                        <p class="text-[9px] text-slate-400 mt-1">Images are resized before saving to Firebase.</p>
+                    </div>
+                    <div id="galleryImagePreviewWrap" class="hidden border border-choco-100 rounded-2xl p-2 bg-choco-50/50">
+                        <img id="galleryImagePreview" alt="Selected product preview" class="w-full max-h-56 object-contain rounded-xl">
+                    </div>
+                    <button type="button" onclick="handleSaveGalleryImage()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-3 rounded-xl text-xs shadow-sm"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Save Picture to Gallery</button>
+                </div>
+
+                <div id="customerGalleryGrid" class="grid grid-cols-2 gap-3"></div>
+            </section>
 
             <!-- ================= REVIEWS & FEEDBACK TAB ================= -->
             <section id="tab-reviews" class="tab-content hidden space-y-4">
@@ -1063,6 +1110,52 @@
                     </div>
                 </div>
 
+                <!-- Delivery places, minimum orders and COD pricing -->
+                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
+                    <div>
+                        <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2"><i class="fa-solid fa-truck-fast text-emerald-600"></i> Delivery Places & COD Settings</h2>
+                        <p class="text-[10px] text-slate-500 mt-1">Set which places customers can choose, the minimum order, and how COD is calculated for each place.</p>
+                    </div>
+                    <div class="rounded-xl bg-choco-50/70 border border-choco-100 p-3 space-y-3">
+                        <div>
+                            <label for="checkoutPlaceName" class="text-[11px] font-semibold text-slate-600">Place / Area Name</label>
+                            <input id="checkoutPlaceName" type="text" maxlength="70" placeholder="e.g. Ipoh, Meru, Batu Gajah" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label for="checkoutMinBoxes" class="text-[11px] font-semibold text-slate-600">Minimum Boxes</label>
+                                <input id="checkoutMinBoxes" type="number" min="1" step="1" value="1" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                            </div>
+                            <div>
+                                <label for="checkoutMinAmount" class="text-[11px] font-semibold text-slate-600">Minimum Subtotal (RM)</label>
+                                <input id="checkoutMinAmount" type="number" min="0" step="0.50" value="0" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label for="checkoutCodType" class="text-[11px] font-semibold text-slate-600">COD Calculation</label>
+                                <select id="checkoutCodType" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                                    <option value="fixed">Flat fee (RM)</option>
+                                    <option value="percent">Percentage of subtotal (%)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="checkoutCodValue" class="text-[11px] font-semibold text-slate-600">COD Fee / Rate</label>
+                                <input id="checkoutCodValue" type="number" min="0" step="0.5" value="0" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                            </div>
+                        </div>
+                        <input id="checkoutPlaceEditId" type="hidden" value="">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="checkoutPlaceSaveBtn" type="button" onclick="handleSaveCheckoutPlace()" class="bg-choco-700 hover:bg-choco-800 text-white font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-plus mr-1"></i> Add Place</button>
+                            <button id="checkoutPlaceCancelBtn" type="button" onclick="resetCheckoutPlaceForm()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold py-2.5 rounded-xl text-xs">Cancel Edit</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Configured Places</div>
+                        <div id="checkoutPlacesAdminList" class="space-y-2"></div>
+                    </div>
+                </div>
+
                 <!-- QR & Bank Settings -->
                 <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
                     <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
@@ -1280,6 +1373,8 @@
             orders: [],
             reviews: [],
             products: DEFAULT_PRODUCTS.map(p => ({ ...p })),
+            checkoutPlaces: [],
+            galleryImageBase64: null,
             filters: {
                 dashboardProduct: 'all',
                 dashboardMonth: 'all',
@@ -1429,7 +1524,7 @@
             if (!products.length) {
                 hidden.value = '';
                 picker.innerHTML = `<div class="col-span-2 rounded-2xl border border-rose-100 bg-rose-50/60 p-4 text-center text-[10px] font-semibold text-rose-600">No products are available for ${escapeHtml(orderDate)}.</div>`;
-                if (hint) hint.innerText = 'Choose another working day or ask Admin to open a product.';
+                if (hint) hint.innerText = 'Choose another date or ask Admin to open a product.';
                 syncOrderQuantityControls(true);
                 renderOrderPriceSummary();
                 return;
@@ -1481,6 +1576,18 @@
             renderOrderPriceSummary();
         }
 
+        function getSelectedCheckoutPlace() {
+            const placeId = document.getElementById('orderPlace')?.value || '';
+            return window.appState.checkoutPlaces.find(place => place.id === placeId) || null;
+        }
+
+        function calculateCodCharge(subtotal, place) {
+            if (!place) return 0;
+            const value = Math.max(0, Number(place.codValue || 0));
+            const fee = place.codType === 'percent' ? subtotal * value / 100 : value;
+            return Math.round((Math.max(0, fee) + Number.EPSILON) * 100) / 100;
+        }
+
         function getOrderPricing() {
             const productId = document.getElementById('orderProduct')?.value || '';
             const qty = Math.max(1, parseInt(document.getElementById('orderQty')?.value || '1', 10) || 1);
@@ -1488,7 +1595,10 @@
             const editId = document.getElementById('orderEditId')?.value || '';
             const existing = editId ? window.appState.orders.find(o => o.id === editId) : null;
             const unitPrice = Number(existing?.unitPrice ?? product?.defaultPrice ?? 0);
-            return { productId, product, qty, unitPrice, total: unitPrice * qty };
+            const subtotal = unitPrice * qty;
+            const place = getSelectedCheckoutPlace();
+            const codCharge = calculateCodCharge(subtotal, place);
+            return { productId, product, qty, unitPrice, subtotal, place, codCharge, total: subtotal + codCharge };
         }
 
         function animateOrderTotal(el) {
@@ -1499,22 +1609,51 @@
         }
 
         function renderOrderPriceSummary() {
-            const { product, qty, unitPrice, total } = getOrderPricing();
+            const { product, qty, unitPrice, subtotal, place, codCharge, total } = getOrderPricing();
             const unitEl = document.getElementById('orderUnitPrice');
             const totalEl = document.getElementById('orderTotalPrice');
             const calcEl = document.getElementById('orderCalcLine');
             const stickyTotal = document.getElementById('orderStickyTotal');
             const stickyDetail = document.getElementById('orderStickyDetail');
+            const subtotalEl = document.getElementById('orderSubtotalAmount');
+            const codEl = document.getElementById('orderCodChargeAmount');
+            const codLabel = document.getElementById('orderCodLabel');
+            const placeDetails = document.getElementById('orderPlaceDetails');
+            const minHint = document.getElementById('orderMinimumHint');
             const qtyWord = qty === 1 ? 'box' : 'boxes';
             if (unitEl) unitEl.innerText = `RM ${unitPrice.toFixed(2)} / box`;
-            if (calcEl) calcEl.innerText = `${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)}`;
+            if (calcEl) calcEl.innerText = `${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)} = RM ${subtotal.toFixed(2)}`;
+            if (subtotalEl) subtotalEl.innerText = `RM ${subtotal.toFixed(2)}`;
+            if (codEl) codEl.innerText = `RM ${codCharge.toFixed(2)}`;
+            if (codLabel) codLabel.innerText = place ? `COD charge · ${place.name}` : 'COD charge';
             if (totalEl) {
                 const next = `RM ${total.toFixed(2)}`;
                 if (totalEl.innerText !== next) animateOrderTotal(totalEl);
                 totalEl.innerText = next;
             }
             if (stickyTotal) stickyTotal.innerText = `RM ${total.toFixed(2)}`;
-            if (stickyDetail) stickyDetail.innerText = product ? `${product.name} · ${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)}` : 'Choose product and quantity';
+            if (stickyDetail) stickyDetail.innerText = product ? `${product.name} · ${qty} ${qtyWord} + COD` : 'Choose product and quantity';
+            if (placeDetails) {
+                if (!place) placeDetails.innerText = window.appState.checkoutPlaces.length
+                    ? 'Please choose a delivery / COD place to calculate the charge.'
+                    : 'Delivery places are not configured yet. Please check back later.';
+                else {
+                    const feeLabel = place.codType === 'percent' ? `${Number(place.codValue || 0)}% of subtotal` : `RM ${Number(place.codValue || 0).toFixed(2)} flat fee`;
+                    placeDetails.innerText = `Minimum: ${Math.max(1, Number(place.minBoxes || 1))} box(es)${Number(place.minAmount || 0) > 0 ? ` and RM ${Number(place.minAmount).toFixed(2)} subtotal` : ''} · COD: ${feeLabel}`;
+                }
+            }
+            if (minHint) {
+                if (!place) minHint.innerText = 'Choose a place to calculate the COD charge and final total.';
+                else {
+                    const minBoxes = Math.max(1, Number(place.minBoxes || 1));
+                    const minAmount = Math.max(0, Number(place.minAmount || 0));
+                    const remainingBoxes = Math.max(0, minBoxes - qty);
+                    const remainingAmount = Math.max(0, minAmount - subtotal);
+                    const valid = remainingBoxes === 0 && remainingAmount <= 0;
+                    minHint.className = `text-[9px] pt-1 ${valid ? 'text-emerald-700' : 'text-rose-600'}`;
+                    minHint.innerText = valid ? `Minimum order met for ${place.name}. Total includes COD.` : `Minimum order for ${place.name}: ${minBoxes} box(es)${minAmount > 0 ? ` and RM ${minAmount.toFixed(2)} subtotal` : ''}.`;
+                }
+            }
         }
 
         function getOrderQuantityLimit() {
@@ -1735,7 +1874,7 @@
 
             if (num) num.innerText = record.orderNo || 'Order Confirmed';
             if (detail) {
-                detail.innerHTML = `<span class="font-bold text-choco-900">${escapeHtml(record.customer || 'Customer')}</span><br>${escapeHtml(productName)} × ${qty}<br>Pickup: ${escapeHtml(prettyDate)}`;
+                detail.innerHTML = `<span class="font-bold text-choco-900">${escapeHtml(record.customer || 'Customer')}</span><br>${escapeHtml(productName)} × ${qty}<br>${record.placeName ? `Place: ${escapeHtml(record.placeName)}<br>` : ''}Order date: ${escapeHtml(prettyDate)}<br>Product subtotal: RM ${Number(record.productSubtotal ?? (qty * Number(record.unitPrice || 0))).toFixed(2)} · COD: RM ${Number(record.codCharge || 0).toFixed(2)}`;
             }
             if (total) total.innerText = `RM ${Number(record.total || 0).toFixed(2)}`;
             if (qr) qr.src = settings.qrUrl || 'https://placehold.co/300x300/6b4226/ffffff?text=DuitNow+QR';
@@ -1766,8 +1905,11 @@
                 `Order No: ${record.orderNo || '-'}`,
                 `Product: ${productName}`,
                 `Quantity: ${qty} box${qty === 1 ? '' : 'es'}`,
+                ...(record.placeName ? [`Place: ${record.placeName}`] : []),
+                `Product subtotal: RM ${Number(record.productSubtotal ?? (qty * Number(record.unitPrice || 0))).toFixed(2)}`,
+                `COD charge: RM ${Number(record.codCharge || 0).toFixed(2)}`,
                 `Total: RM ${total.toFixed(2)}`,
-                `Pickup Date: ${prettyDate}`,
+                `Order Date: ${prettyDate}`,
                 '',
                 'I will send the payment receipt/screenshot here for confirmation.'
             ].join('\n');
@@ -1984,6 +2126,7 @@
                 }
                 renderProductSelectors();
                 renderProducts();
+                renderGallery();
                 renderMonthFilter();
                 renderIngredients();
                 renderSales();
@@ -2033,6 +2176,16 @@
                             );
                         }
                     });
+            });
+
+            onValue(getDbRef('settings/checkout_config/places'), (snapshot) => {
+                const data = snapshot.val() || {};
+                window.appState.checkoutPlaces = Object.keys(data).map(key => ({ id: key, ...data[key] }))
+                    .filter(place => place.active !== false)
+                    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+                renderCheckoutPlaceSelector();
+                renderCheckoutPlaceAdminList();
+                renderOrderPriceSummary();
             });
 
             onValue(getDbRef('settings/order_config'), (snapshot) => {
@@ -2096,6 +2249,7 @@
             if (tabName === 'dashboard') setTimeout(renderProfitChart, 80);
             if (tabName === 'sales') { renderSalesMonthFilter(); renderSales(); }
             if (tabName === 'orders') renderOrders();
+            if (tabName === 'gallery') renderGallery();
         };
 
         window.toggleAdminSidebar = function() {
@@ -2124,6 +2278,7 @@
                     { id: 'ingredients', label: 'Ingredients', icon: 'fa-calculator' }
                 ]},
                 { group: 'Customer', tabs: [
+                    { id: 'gallery', label: 'Gallery', icon: 'fa-images' },
                     { id: 'reviews', label: 'Reviews', icon: 'fa-heart' }
                 ]},
                 { group: 'System', tabs: [
@@ -2132,6 +2287,7 @@
             ];
             const customerTabs = [
                 { id: 'orders', label: 'Order', icon: 'fa-bag-shopping' },
+                { id: 'gallery', label: 'Gallery', icon: 'fa-images' },
                 { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
                 { id: 'pay', label: 'Pay & QR', icon: 'fa-qrcode' }
             ];
@@ -2165,7 +2321,7 @@
             }
 
             // Customer mode: Order is the default landing page.
-            if (!['orders', 'reviews', 'pay'].includes(window.appState.activeTab)) {
+            if (!['orders', 'gallery', 'reviews', 'pay'].includes(window.appState.activeTab)) {
                 window.appState.activeTab = 'orders';
             }
 
@@ -2227,6 +2383,9 @@
             }
             renderNavigation();
             renderReviews();
+            renderGallery();
+            renderCheckoutPlaceSelector();
+            renderCheckoutPlaceAdminList();
             resetOrderForm();
             renderOrders();
         }
@@ -2966,25 +3125,22 @@
         }
 
         function isWorkingOrderDate(dateStr) {
+            // Orders are available on all seven days; this helper now only validates the date.
             const d = new Date(`${dateStr}T12:00:00`);
-            if (Number.isNaN(d.getTime())) return false;
-            const day = d.getDay();
-            return day >= 1 && day <= 5;
+            return !Number.isNaN(d.getTime());
         }
 
-        function getNextWorkingOrderDates(count = 5) {
+        function getNextWorkingOrderDates(count = 7) {
             const dates = [];
-            for (let offset = 0; offset < 30 && dates.length < count; offset++) {
-                const date = dateOffsetStr(offset);
-                if (isWorkingOrderDate(date)) dates.push(date);
+            for (let offset = 0; offset < 90 && dates.length < count; offset++) {
+                dates.push(dateOffsetStr(offset));
             }
             return dates;
         }
 
         function findNextAvailableOrderDate() {
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 90; i++) {
                 const date = dateOffsetStr(i);
-                if (!isWorkingOrderDate(date)) continue;
                 const cap = getOrderCapacity(date);
                 if (!cap.closed && (cap.limit <= 0 || cap.booked < cap.limit) && getOrderableProducts(date).length) return date;
             }
@@ -3012,7 +3168,7 @@
             const isAdmin = window.appState.isAdmin;
             const cards = [];
 
-            for (const date of getNextWorkingOrderDates(5)) {
+            for (const date of getNextWorkingOrderDates(7)) {
                 const label = formatOrderCalendarDate(date);
                 const dateClosed = isOrderDateClosed(date);
                 const products = getCalendarProductsForDate(date);
@@ -3101,8 +3257,8 @@
             const saveBtn = document.getElementById('orderSaveBtn');
 
             if (!isAdmin && !isWorkingOrderDate(date)) {
-                if (textEl) textEl.innerText = 'Working days only';
-                if (hintEl) hintEl.innerText = 'Customer orders are accepted Monday to Friday only.';
+                if (textEl) textEl.innerText = 'Invalid date';
+                if (hintEl) hintEl.innerText = 'Please choose a valid order date.';
                 if (badgeEl) {
                     badgeEl.innerText = 'Unavailable';
                     badgeEl.className = 'bg-slate-500/30 border border-white/20 text-white px-2.5 py-1 rounded-full text-[10px] font-bold';
@@ -3403,6 +3559,7 @@
                 date.min = window.appState.isAdmin ? '' : localDateStr();
             }
             const customer = document.getElementById('orderCustomer'); if (customer) customer.value = '';
+            const placeSelect = document.getElementById('orderPlace'); if (placeSelect) placeSelect.value = '';
             const status = document.getElementById('orderStatus'); if (status) status.value = 'Pending';
             renderOrderProductSelector();
             const firstProduct = window.appState.isAdmin
@@ -3444,6 +3601,7 @@
             const order = window.appState.orders.find(o => o.id === id);
             if (!order) return;
             document.getElementById('orderEditId').value = order.id;
+            document.getElementById('orderPlace').value = order.placeId || '';
             document.getElementById('orderProduct').value = order.productId || 'kek-batik';
             renderOrderProductSelector();
             document.getElementById('orderQty').value = Math.max(1, Number(order.qty || 1));
@@ -3532,7 +3690,7 @@
             if (!isAdmin && (!productId || !isProductOpenForOrder(productId, date))) return showToast('This product is not open for ordering right now.', 'error');
             if (!isAdmin && !customer) return showToast('Please enter your name.', 'error');
             if (!isAdmin && date < localDateStr()) return showToast('Please choose today or a future date.', 'error');
-            if (!isAdmin && !isWorkingOrderDate(date)) return showToast('Orders are available on working days only (Monday-Friday).', 'error');
+            if (!isAdmin && !isWorkingOrderDate(date)) return showToast('Please choose a valid order date.', 'error');
             if (!isAdmin && isOrderDateClosed(date)) return showToast(`${date} is closed for orders. Please choose another date.`, 'error');
             if (!isAdmin) {
                 const cap = getEffectiveOrderCapacity(date, productId, editId);
@@ -3543,7 +3701,17 @@
             if (editId && !existing) return showToast('Order not found.', 'error');
             const product = window.appState.products.find(p => p.id === productId);
             const unitPrice = Number(existing?.unitPrice ?? product?.defaultPrice ?? 0);
-            const total = unitPrice * qty;
+            const place = getSelectedCheckoutPlace();
+            const subtotal = unitPrice * qty;
+            const codCharge = calculateCodCharge(subtotal, place);
+            const total = subtotal + codCharge;
+            if (!isAdmin && !place) return showToast('Please choose a delivery / COD place.', 'error');
+            if (!isAdmin && place) {
+                const minimumBoxes = Math.max(1, Number(place.minBoxes || 1));
+                const minimumAmount = Math.max(0, Number(place.minAmount || 0));
+                if (qty < minimumBoxes) return showToast(`${place.name} requires at least ${minimumBoxes} box(es).`, 'error');
+                if (subtotal < minimumAmount) return showToast(`${place.name} requires a minimum subtotal of RM ${minimumAmount.toFixed(2)}.`, 'error');
+            }
             const orderNo = existing?.orderNo || `ORD-${date.replace(/-/g, '')}-${String(Date.now()).slice(-5)}`;
             const record = {
                 ...(existing || {}),
@@ -3551,6 +3719,12 @@
                 productId,
                 qty,
                 unitPrice,
+                productSubtotal: subtotal,
+                codCharge,
+                codType: place?.codType || 'fixed',
+                codValue: Number(place?.codValue || 0),
+                placeId: place?.id || '',
+                placeName: place?.name || '',
                 total,
                 date,
                 customer,
@@ -3712,7 +3886,7 @@
                             </div>
                             <div class="font-bold text-choco-900 mt-1"><i class="fa-solid ${escapeHtml(getProductIcon(order.productId))} text-choco-500 mr-1"></i>${escapeHtml(getProductName(order.productId))} × ${Number(order.qty || 1)}</div>
                             <div class="text-[10px] font-bold text-choco-700 mt-1">RM ${Number(order.total ?? (Number(order.qty || 1) * Number(order.unitPrice || 0))).toFixed(2)} total <span class="font-normal text-slate-400">(${Number(order.unitPrice || 0).toFixed(2)}/box)</span></div>
-                            <div class="text-[10px] text-slate-500 mt-1">${escapeHtml(order.date || '')}${order.customer ? ' · ' + escapeHtml(order.customer) : ''}</div>
+                            <div class="text-[10px] text-slate-500 mt-1">${escapeHtml(order.date || '')}${order.placeName ? ' · ' + escapeHtml(order.placeName) : ''}${order.customer ? ' · ' + escapeHtml(order.customer) : ''}</div>
                         </div>
                     </div>
                     <div class="flex justify-end gap-2 border-t border-slate-100 pt-2">
@@ -4138,6 +4312,207 @@
             reader.readAsDataURL(file);
         };
 
+        function renderCheckoutPlaceSelector() {
+            const select = document.getElementById('orderPlace');
+            if (!select) return;
+            const current = select.value;
+            select.innerHTML = `<option value="">Choose your place</option>` + window.appState.checkoutPlaces.map(place =>
+                `<option value="${escapeHtml(place.id)}">${escapeHtml(place.name)}</option>`
+            ).join('');
+            select.value = window.appState.checkoutPlaces.some(place => place.id === current) ? current : '';
+            renderOrderPriceSummary();
+        }
+
+        function renderCheckoutPlaceAdminList() {
+            const list = document.getElementById('checkoutPlacesAdminList');
+            if (!list) return;
+            if (!window.appState.isAdmin) {
+                list.innerHTML = '';
+                return;
+            }
+            if (!window.appState.checkoutPlaces.length) {
+                list.innerHTML = '<div class="text-[10px] text-slate-400 border border-dashed border-slate-200 rounded-xl p-3">No places yet. Add your first COD place above.</div>';
+                return;
+            }
+            list.innerHTML = window.appState.checkoutPlaces.map(place => {
+                const feeText = place.codType === 'percent' ? `${Number(place.codValue || 0)}% of subtotal` : `RM ${Number(place.codValue || 0).toFixed(2)} flat fee`;
+                return `<div class="rounded-xl border border-slate-100 p-3 flex items-start justify-between gap-3">
+                    <div class="min-w-0"><div class="text-xs font-bold text-choco-900">${escapeHtml(place.name)}</div>
+                    <div class="text-[10px] text-slate-500 mt-1">Minimum ${Math.max(1, Number(place.minBoxes || 1))} box(es)${Number(place.minAmount || 0) > 0 ? ` · RM ${Number(place.minAmount).toFixed(2)} subtotal` : ''}</div>
+                    <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">COD: ${escapeHtml(feeText)}</div></div>
+                    <div class="flex gap-1 shrink-0"><button type="button" onclick="handleEditCheckoutPlace('${escapeHtml(place.id)}')" class="px-2 py-1.5 rounded-lg bg-choco-50 text-choco-700 text-[10px] font-bold"><i class="fa-solid fa-pen"></i></button><button type="button" onclick="handleDeleteCheckoutPlace('${escapeHtml(place.id)}')" class="px-2 py-1.5 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button></div>
+                </div>`;
+            }).join('');
+        }
+
+        window.resetCheckoutPlaceForm = function() {
+            const editId = document.getElementById('checkoutPlaceEditId'); if (editId) editId.value = '';
+            const name = document.getElementById('checkoutPlaceName'); if (name) name.value = '';
+            const boxes = document.getElementById('checkoutMinBoxes'); if (boxes) boxes.value = '1';
+            const amount = document.getElementById('checkoutMinAmount'); if (amount) amount.value = '0';
+            const type = document.getElementById('checkoutCodType'); if (type) type.value = 'fixed';
+            const value = document.getElementById('checkoutCodValue'); if (value) value.value = '0';
+            const save = document.getElementById('checkoutPlaceSaveBtn'); if (save) save.innerHTML = '<i class="fa-solid fa-plus mr-1"></i> Add Place';
+            document.getElementById('checkoutPlaceCancelBtn')?.classList.add('hidden');
+        };
+
+        window.handleEditCheckoutPlace = function(id) {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const place = window.appState.checkoutPlaces.find(item => item.id === id);
+            if (!place) return;
+            document.getElementById('checkoutPlaceEditId').value = place.id;
+            document.getElementById('checkoutPlaceName').value = place.name || '';
+            document.getElementById('checkoutMinBoxes').value = Math.max(1, Number(place.minBoxes || 1));
+            document.getElementById('checkoutMinAmount').value = Math.max(0, Number(place.minAmount || 0));
+            document.getElementById('checkoutCodType').value = place.codType === 'percent' ? 'percent' : 'fixed';
+            document.getElementById('checkoutCodValue').value = Math.max(0, Number(place.codValue || 0));
+            document.getElementById('checkoutPlaceSaveBtn').innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Save Place';
+            document.getElementById('checkoutPlaceCancelBtn').classList.remove('hidden');
+            document.getElementById('checkoutPlaceName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        };
+
+        window.handleSaveCheckoutPlace = async function() {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const name = document.getElementById('checkoutPlaceName').value.trim();
+            if (!name) return showToast('Enter a place or area name.', 'error');
+            const minBoxes = Math.max(1, parseInt(document.getElementById('checkoutMinBoxes').value, 10) || 1);
+            const minAmount = Math.max(0, Number(document.getElementById('checkoutMinAmount').value) || 0);
+            const codType = document.getElementById('checkoutCodType').value === 'percent' ? 'percent' : 'fixed';
+            const codValue = Math.max(0, Number(document.getElementById('checkoutCodValue').value) || 0);
+            const editId = document.getElementById('checkoutPlaceEditId').value.trim();
+            const duplicate = window.appState.checkoutPlaces.some(place => place.id !== editId && place.name.toLowerCase() === name.toLowerCase());
+            if (duplicate) return showToast('That place already exists.', 'error');
+            const id = editId || `${slugify(name)}-${Date.now().toString(36)}`;
+            const place = { name, minBoxes, minAmount, codType, codValue, active: true, updatedAt: Date.now() };
+            try {
+                await set(getDbRef(`settings/checkout_config/places/${id}`), place);
+                resetCheckoutPlaceForm();
+                showToast(`COD settings saved for ${name}.`, 'success');
+            } catch (err) {
+                console.error('Failed to save checkout place', err);
+                showToast('Failed to save place settings.', 'error');
+            }
+        };
+
+        window.handleDeleteCheckoutPlace = async function(id) {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const place = window.appState.checkoutPlaces.find(item => item.id === id);
+            if (!place || !confirm(`Delete ${place.name} from available COD places? Existing orders are kept.`)) return;
+            try {
+                await remove(getDbRef(`settings/checkout_config/places/${id}`));
+                if (document.getElementById('checkoutPlaceEditId')?.value === id) resetCheckoutPlaceForm();
+                showToast(`${place.name} removed.`, 'success');
+            } catch (err) { showToast('Failed to delete place.', 'error'); }
+        };
+
+        window.handleGalleryImageSelected = function(event) {
+            const file = event?.target?.files?.[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) return showToast('Please choose an image file.', 'error');
+            if (file.size > 15 * 1024 * 1024) return showToast('Please choose an image smaller than 15 MB.', 'error');
+            const reader = new FileReader();
+            reader.onerror = () => showToast('Could not read this image.', 'error');
+            reader.onload = () => {
+                const image = new Image();
+                image.onerror = () => showToast('This image could not be opened.', 'error');
+                image.onload = () => {
+                    const maxDim = 900;
+                    const scale = Math.min(1, maxDim / Math.max(image.width, image.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(image.width * scale));
+                    canvas.height = Math.max(1, Math.round(image.height * scale));
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return showToast('Image conversion is not supported in this browser.', 'error');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                    window.appState.galleryImageBase64 = canvas.toDataURL('image/jpeg', 0.78);
+                    const preview = document.getElementById('galleryImagePreview');
+                    const wrap = document.getElementById('galleryImagePreviewWrap');
+                    if (preview) preview.src = window.appState.galleryImageBase64;
+                    if (wrap) wrap.classList.remove('hidden');
+                };
+                image.src = String(reader.result || '');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.handleSaveGalleryImage = async function() {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const productId = document.getElementById('galleryProductSelect')?.value || '';
+            const imageUrl = window.appState.galleryImageBase64;
+            const product = getProduct(productId);
+            if (!product) return showToast('Choose a product first.', 'error');
+            if (!imageUrl) return showToast('Choose a picture to upload.', 'error');
+            try {
+                await set(getDbRef(`products/${productId}`), { ...product, imageUrl, imageUpdatedAt: Date.now() });
+                window.appState.galleryImageBase64 = null;
+                const fileInput = document.getElementById('galleryImageFile'); if (fileInput) fileInput.value = '';
+                document.getElementById('galleryImagePreviewWrap')?.classList.add('hidden');
+                showToast(`${product.name} picture saved to the gallery.`, 'success');
+            } catch (err) {
+                console.error('Failed to save gallery picture', err);
+                showToast('Failed to save picture. Try a smaller image.', 'error');
+            }
+        };
+
+        function renderGallery() {
+            const grid = document.getElementById('customerGalleryGrid');
+            const adminCard = document.getElementById('galleryAdminUploadCard');
+            const productSelect = document.getElementById('galleryProductSelect');
+            if (adminCard) adminCard.classList.toggle('hidden', !window.appState.isAdmin);
+            if (productSelect) {
+                const current = productSelect.value;
+                productSelect.innerHTML = window.appState.products.map(product => `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)}</option>`).join('');
+                if (window.appState.products.some(product => product.id === current)) productSelect.value = current;
+            }
+            if (!grid) return;
+            const products = window.appState.products.filter(product => product.active !== false);
+            if (!products.length) {
+                grid.innerHTML = '<div class="col-span-2 text-center py-10 text-xs text-slate-400">No products in the gallery yet.</div>';
+                return;
+            }
+            grid.innerHTML = products.map(product => {
+                const image = String(product.imageUrl || product.image || product.photo || '').trim();
+                const visual = image
+                    ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" class="gallery-product-image cursor-zoom-in" onclick="window.openLightbox(this.src)">`
+                    : `<div class="gallery-product-image flex items-center justify-center text-5xl text-choco-400"><i class="fa-solid ${escapeHtml(product.icon || 'fa-cookie-bite')}"></i></div>`;
+                return `<article class="gallery-product-card bg-white border border-choco-100 rounded-2xl shadow-sm">
+                    ${visual}
+                    <div class="p-3 space-y-2">
+                        <div class="font-bold text-choco-900 text-xs leading-snug min-h-8">${escapeHtml(product.name)}</div>
+                        <div class="text-base font-extrabold text-choco-700">RM ${Number(product.defaultPrice || 0).toFixed(2)} <span class="text-[9px] font-semibold text-slate-400">/ box</span></div>
+                        <button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" class="w-full bg-choco-700 hover:bg-choco-800 text-white py-2.5 rounded-xl text-[10px] font-bold"><i class="fa-solid fa-bag-shopping mr-1"></i> Order Now</button>
+                    </div>
+                </article>`;
+            }).join('');
+        }
+
+        window.orderFromGallery = function(productId) {
+            const product = getProduct(productId);
+            if (!product || product.active === false) return showToast('This product is not available for ordering.', 'error');
+            const orderDate = (() => {
+                for (let offset = 0; offset < 90; offset++) {
+                    const date = dateOffsetStr(offset);
+                    if (isOrderDateClosed(date) || !isProductOpenForOrder(productId, date)) continue;
+                    const cap = getEffectiveOrderCapacity(date, productId);
+                    if (cap.limit <= 0 || cap.remaining > 0) return date;
+                }
+                return '';
+            })();
+            if (!orderDate) return showToast('This product has no available order dates. Please contact the seller.', 'error');
+            switchTab('orders');
+            const dateInput = document.getElementById('orderDate');
+            if (dateInput) dateInput.value = orderDate;
+            const productInput = document.getElementById('orderProduct');
+            if (productInput) productInput.value = productId;
+            renderOrderProductSelector();
+            renderOrderCalendar();
+            renderOrderCapacity();
+            renderOrderPriceSummary();
+            document.getElementById('orderFormCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
         window.handleSaveQrSettings = async function() {
             const newSettings = {
                 bankName: document.getElementById('setBankName').value.trim() || 'Maybank',
@@ -4184,6 +4559,9 @@
             renderMonthFilter();
             renderSalesMonthFilter();
             renderProducts();
+            renderGallery();
+            renderCheckoutPlaceSelector();
+            renderCheckoutPlaceAdminList();
             renderIngredients();
             if (!document.getElementById('ingEditId')?.value) resetIngredientForm();
             renderSales();
