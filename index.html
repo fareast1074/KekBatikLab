@@ -666,6 +666,52 @@
                     </div>
                 </div>
 
+                <!-- Merged Gallery + Order: choose a product here and the calendar below will show its dates. -->
+                <div class="rounded-3xl overflow-hidden bg-gradient-to-br from-choco-800 via-choco-700 to-choco-900 text-amber-50 p-5 shadow-lg">
+                    <div class="text-[9px] uppercase tracking-[0.22em] font-extrabold text-amber-200/75">Made with love</div>
+                    <h2 class="font-serif text-2xl font-bold mt-1">Choose Your Cake</h2>
+                    <p class="text-[11px] text-amber-100/80 mt-1">Tap a product photo to select it, see the dates available for that cake, and place your order below.</p>
+                </div>
+
+                <div id="galleryAdminUploadCard" class="hidden bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
+                    <div>
+                        <h3 class="text-sm font-bold text-choco-900 flex items-center gap-2"><i class="fa-solid fa-camera text-choco-600"></i> Manage Gallery Pictures</h3>
+                        <p class="text-[10px] leading-relaxed text-slate-500 mt-1">Choose a product and upload its photo. The picture will appear in this Order page so customers can tap it to select the cake and view its dates.</p>
+                    </div>
+                    <div>
+                        <label for="galleryProductSelect" class="text-[11px] font-semibold text-slate-600">Product</label>
+                        <select id="galleryProductSelect" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50 focus:ring-2 focus:ring-choco-600 focus:outline-none"></select>
+                    </div>
+                    <div>
+                        <label for="galleryImageFile" class="text-[11px] font-semibold text-slate-600">Product Picture</label>
+                        <input id="galleryImageFile" type="file" accept="image/*" onchange="handleGalleryImageSelected(event)" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 file:mr-3 file:border-0 file:bg-choco-100 file:text-choco-800 file:px-3 file:py-1.5 file:rounded-lg">
+                        <p class="text-[9px] text-slate-400 mt-1">Images are resized before saving to Firebase.</p>
+                    </div>
+                    <div id="galleryImagePreviewWrap" class="hidden border border-choco-100 rounded-2xl p-2 bg-choco-50/50">
+                        <img id="galleryImagePreview" alt="Selected product preview" class="w-full max-h-56 object-contain rounded-xl">
+                    </div>
+                    <button type="button" onclick="handleSaveGalleryImage()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-3 rounded-xl text-xs shadow-sm"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Save Picture to Gallery</button>
+                </div>
+
+                <div class="bg-white border border-choco-100 rounded-2xl p-3 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between gap-2"><div><div class="text-xs font-extrabold text-choco-900">Find your favourite</div><div id="galleryProductsCount" class="text-[9px] text-slate-400 mt-0.5">Browse cakes and desserts</div></div><i class="fa-solid fa-magnifying-glass text-choco-400"></i></div>
+                    <input id="gallerySearchInput" type="search" oninput="renderGallery()" placeholder="Search cake, cheese, chocolate…" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                    <select id="galleryCategoryFilter" onchange="renderGallery()" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none"><option value="all">All categories</option></select>
+                </div>
+                <div id="customerGalleryGrid" class="grid grid-cols-2 gap-3"></div>
+
+                <!-- Upgrade 1: simple upcoming order calendar -->
+                <div id="orderCalendarCard" class="bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 id="orderCalendarTitle" class="text-xs font-bold uppercase tracking-wider text-choco-900 flex items-center gap-1.5"><i class="fa-solid fa-calendar-days text-choco-600"></i> Available Order Dates</h3>
+                            <p id="orderCalendarHint" class="text-[10px] text-slate-500 mt-1">Select a cake above to see exactly which dates are available for that product. Orders are accepted seven days a week.</p>
+                        </div>
+                        <span class="text-[9px] font-bold text-choco-700 bg-choco-50 border border-choco-100 px-2 py-1 rounded-full shrink-0">7 Days / Week</span>
+                    </div>
+                    <div id="orderCalendarGrid" class="grid grid-cols-2 gap-2"></div>
+                </div>
+
                 <div class="bg-gradient-to-r from-choco-800 to-choco-900 text-amber-100 p-4 rounded-2xl shadow-lg border border-choco-700 space-y-3">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -680,16 +726,11 @@
                     </div>
                 </div>
 
-                <!-- Upgrade 1: simple upcoming order calendar -->
-                <div class="bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-xs font-bold uppercase tracking-wider text-choco-900 flex items-center gap-1.5"><i class="fa-solid fa-calendar-days text-choco-600"></i> Order Calendar</h3>
-                            <p class="text-[10px] text-slate-500 mt-1">Order any day from Monday to Sunday. Each date shows product availability; closed or full dates cannot be selected.</p>
-                        </div>
-                        <span class="text-[9px] font-bold text-choco-700 bg-choco-50 border border-choco-100 px-2 py-1 rounded-full shrink-0">7 Days / Week</span>
+                <div id="orderCutoffNotice" class="rounded-2xl border border-choco-200 bg-choco-50/70 px-3.5 py-3 text-[10px] leading-relaxed text-choco-900">
+                    <div class="flex items-start gap-2.5">
+                        <span class="w-8 h-8 rounded-xl bg-white border border-choco-100 text-choco-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-clock"></i></span>
+                        <div class="min-w-0"><div id="orderCutoffTitle" class="font-extrabold text-xs">Same-day order cutoff</div><div id="orderCutoffMessage" class="mt-0.5 text-slate-600">Same-day orders are accepted until 8:00 PM Malaysia time.</div></div>
                     </div>
-                    <div id="orderCalendarGrid" class="grid grid-cols-2 gap-2"></div>
                 </div>
 
                 <!-- Upgrade 2, 3 and 11: Admin capacity controls -->
@@ -728,6 +769,17 @@
                         <div id="closedDatesList" class="flex flex-wrap gap-1.5"></div>
                     </div>
 
+                    <div class="border border-amber-200 rounded-xl p-3 bg-amber-50/60 space-y-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-8 h-8 rounded-xl bg-white border border-amber-200 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-clock"></i></span>
+                            <div><div class="text-[10px] font-bold uppercase tracking-wider text-amber-900">Same-Day Order Cutoff</div><div class="text-[9px] text-slate-500 mt-0.5">After this time, customers must choose a future date. Malaysia time (MYT).</div></div>
+                        </div>
+                        <div class="grid grid-cols-[1fr_auto] gap-2 items-end">
+                            <div><label for="orderCutoffTime" class="text-[10px] font-semibold text-slate-600">Cutoff time</label><input id="orderCutoffTime" type="time" value="20:00" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none"></div>
+                            <button type="button" onclick="handleSaveOrderCutoff()" class="bg-choco-700 hover:bg-choco-800 text-white font-bold px-4 py-2.5 rounded-xl text-[10px]"><i class="fa-solid fa-floppy-disk mr-1"></i>Save</button>
+                        </div>
+                    </div>
+
                     <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-2">
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Notice</div>
                         <textarea id="orderNoticeInput" rows="2" maxlength="180" placeholder="e.g. Saturday orders are limited this week." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-white"></textarea>
@@ -752,20 +804,16 @@
                             <h2 id="orderFormTitle" class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
                                 <i class="fa-solid fa-bag-shopping text-choco-600"></i> Place Order
                             </h2>
-                            <p id="orderFormSubtitle" class="text-[10px] text-slate-500 mt-0.5">Choose your product, quantity and an available date above. Product availability can change by date.</p>
+                            <p id="orderFormSubtitle" class="text-[10px] text-slate-500 mt-0.5">Choose a cake photo above, select one of its available dates, then enter your quantity and delivery place.</p>
                         </div>
                         <span id="orderEditBadge" class="hidden text-[9px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-full">Editing</span>
                     </div>
                     <input type="hidden" id="orderEditId" value="">
                     <div class="space-y-3">
-                        <div>
-                            <label class="text-[11px] font-semibold text-slate-600">Product</label>
+                        <div class="hidden" aria-hidden="true">
                             <input type="hidden" id="orderProduct" value="">
-                            <div id="orderProductPicker" class="grid grid-cols-2 gap-2 mt-1">
-                                <div class="order-skeleton h-[74px] rounded-2xl border border-choco-100"></div>
-                                <div class="order-skeleton h-[74px] rounded-2xl border border-choco-100"></div>
-                            </div>
-                            <div id="orderProductPickerHint" class="text-[9px] text-slate-400 mt-1.5">Loading products and availability...</div>
+                            <div id="orderProductPicker"></div>
+                            <div id="orderProductPickerHint"></div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
@@ -853,37 +901,6 @@
                 </div>
             </section>
 
-
-            <!-- ================= CUSTOMER PRODUCT GALLERY TAB ================= -->
-            <section id="tab-gallery" class="tab-content hidden space-y-4">
-                <div class="rounded-3xl overflow-hidden bg-gradient-to-br from-choco-800 via-choco-700 to-choco-900 text-amber-50 p-5 shadow-lg">
-                    <div class="text-[9px] uppercase tracking-[0.22em] font-extrabold text-amber-200/75">Made with love</div>
-                    <h2 class="font-serif text-2xl font-bold mt-1">Cake Gallery</h2>
-                    <p class="text-[11px] text-amber-100/80 mt-1">Take a look at our desserts. Prices are shown below each product.</p>
-                </div>
-
-                <div id="galleryAdminUploadCard" class="hidden bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
-                    <div>
-                        <h3 class="text-sm font-bold text-choco-900 flex items-center gap-2"><i class="fa-solid fa-camera text-choco-600"></i> Manage Gallery Pictures</h3>
-                        <p class="text-[10px] leading-relaxed text-slate-500 mt-1">Choose a product and upload its photo. The picture will appear in the customer gallery and product order selector.</p>
-                    </div>
-                    <div>
-                        <label for="galleryProductSelect" class="text-[11px] font-semibold text-slate-600">Product</label>
-                        <select id="galleryProductSelect" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50 focus:ring-2 focus:ring-choco-600 focus:outline-none"></select>
-                    </div>
-                    <div>
-                        <label for="galleryImageFile" class="text-[11px] font-semibold text-slate-600">Product Picture</label>
-                        <input id="galleryImageFile" type="file" accept="image/*" onchange="handleGalleryImageSelected(event)" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 file:mr-3 file:border-0 file:bg-choco-100 file:text-choco-800 file:px-3 file:py-1.5 file:rounded-lg">
-                        <p class="text-[9px] text-slate-400 mt-1">Images are resized before saving to Firebase.</p>
-                    </div>
-                    <div id="galleryImagePreviewWrap" class="hidden border border-choco-100 rounded-2xl p-2 bg-choco-50/50">
-                        <img id="galleryImagePreview" alt="Selected product preview" class="w-full max-h-56 object-contain rounded-xl">
-                    </div>
-                    <button type="button" onclick="handleSaveGalleryImage()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-3 rounded-xl text-xs shadow-sm"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Save Picture to Gallery</button>
-                </div>
-
-                <div id="customerGalleryGrid" class="grid grid-cols-2 gap-3"></div>
-            </section>
 
             <!-- ================= REVIEWS & FEEDBACK TAB ================= -->
             <section id="tab-reviews" class="tab-content hidden space-y-4">
@@ -1018,6 +1035,22 @@
                                 <label class="text-[11px] font-semibold text-slate-600">Batch Yield (Boxes)</label>
                                 <input type="number" id="productYield" value="10" min="1" step="1" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
                             </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label for="productCategory" class="text-[11px] font-semibold text-slate-600">Gallery Category</label>
+                                <select id="productCategory" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                                    <option value="Kek Batik">Kek Batik</option><option value="Cheese">Cheese</option><option value="Ganache">Ganache</option><option value="Dessert">Dessert</option><option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="productSize" class="text-[11px] font-semibold text-slate-600">Size / Serving</label>
+                                <input id="productSize" maxlength="60" placeholder="e.g. 500g / 6 slices" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="productDescription" class="text-[11px] font-semibold text-slate-600">Customer-facing Description</label>
+                            <textarea id="productDescription" maxlength="280" rows="2" placeholder="Describe the flavour, layers, texture or ingredients…" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50"></textarea>
                         </div>
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600">Icon</label>
@@ -1398,7 +1431,8 @@
                 orderProductOpen: {},
                 productAvailability: {},
                 productDailyLimits: {},
-                orderNotice: ''
+                orderNotice: '',
+                orderCutoffTime: '20:00'
             }
         };
 
@@ -1410,6 +1444,62 @@
             const m = String(date.getMonth() + 1).padStart(2, '0');
             const d = String(date.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
+        }
+
+        function getMalaysiaDateTimeParts(now = new Date()) {
+            const parts = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+            }).formatToParts(now).reduce((acc, part) => { if (part.type !== 'literal') acc[part.type] = part.value; return acc; }, {});
+            return { date: `${parts.year}-${parts.month}-${parts.day}`, minutes: Number(parts.hour) * 60 + Number(parts.minute), hour: Number(parts.hour), minute: Number(parts.minute) };
+        }
+
+        function getConfiguredOrderCutoffTime() {
+            const raw = String(window.appState.settings.orderCutoffTime || '20:00');
+            return /^([01]\d|2[0-3]):[0-5]\d$/.test(raw) ? raw : '20:00';
+        }
+
+        function formatCutoffTime(value = getConfiguredOrderCutoffTime()) {
+            const [hour, minute] = value.split(':').map(Number);
+            const suffix = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return `${displayHour}:${String(minute).padStart(2, '0')} ${suffix}`;
+        }
+
+        function isOrderCutoffPassedForDate(dateStr) {
+            if (!dateStr || String(dateStr) !== getMalaysiaDateTimeParts().date) return false;
+            const [hour, minute] = getConfiguredOrderCutoffTime().split(':').map(Number);
+            const current = getMalaysiaDateTimeParts();
+            return current.minutes >= hour * 60 + minute;
+        }
+
+        function getProductCategory(product) {
+            if (String(product?.category || '').trim()) return String(product.category).trim();
+            const name = String(product?.name || '').toLowerCase();
+            if (name.includes('ganache')) return 'Ganache';
+            if (name.includes('cheese') || name.includes('cheesekut')) return 'Cheese';
+            if (name.includes('batik')) return 'Kek Batik';
+            return 'Dessert';
+        }
+
+        function getAvailableProductDates(productId, count = 3) {
+            const dates = [];
+            for (let offset = 0; offset < 90 && dates.length < count; offset++) {
+                const date = dateOffsetStr(offset);
+                if (isOrderCutoffPassedForDate(date) || isOrderDateClosed(date) || !isProductOpenForOrder(productId, date)) continue;
+                const cap = getEffectiveOrderCapacity(date, productId);
+                if (cap.limit <= 0 || cap.remaining > 0) dates.push(date);
+            }
+            return dates;
+        }
+
+        function getNextAvailableProductDate(productId) {
+            return getAvailableProductDates(productId, 1)[0] || '';
+        }
+
+        function formatProductDateLabel(dateStr) {
+            const date = new Date(`${dateStr}T12:00:00`);
+            return date.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short' });
         }
 
         function escapeHtml(value) {
@@ -1452,7 +1542,7 @@
             return { mode: window.appState.settings.orderProductOpen?.[id] === false ? 'closed' : 'always', dates: {} };
         }
 
-        function isProductOpenForOrder(id, date = document.getElementById('orderDate')?.value || localDateStr()) {
+        function isProductOpenForOrder(id, date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date) {
             const product = getProduct(id);
             if (!product || product.active === false) return false;
             const cfg = getProductAvailabilityConfig(id);
@@ -1461,7 +1551,7 @@
             return true;
         }
 
-        function getOrderableProducts(date = document.getElementById('orderDate')?.value || localDateStr()) {
+        function getOrderableProducts(date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date) {
             return window.appState.products.filter(p => p.active !== false && isProductOpenForOrder(p.id, date));
         }
 
@@ -1512,14 +1602,12 @@
             if (!hidden || !picker) return;
 
             const current = hidden.value;
-            const orderDate = document.getElementById('orderDate')?.value || localDateStr();
+            const orderDate = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
+            const cutoffPassed = !window.appState.isAdmin && isOrderCutoffPassedForDate(orderDate);
             let products = window.appState.products.filter(p => p.active !== false);
 
-            // Customer view keeps sold-out products visible so availability is obvious.
-            // Products that are not scheduled/open for the chosen date stay hidden.
-            if (!window.appState.isAdmin) {
-                products = products.filter(p => isProductOpenForOrder(p.id, orderDate));
-            }
+            // Keep every active product in the hidden selector so the chosen product stays selected
+            // while customers browse dates when that product is not scheduled or is sold out.
 
             if (!products.length) {
                 hidden.value = '';
@@ -1532,11 +1620,10 @@
 
             const selectableProducts = products.filter(p => {
                 const cap = getEffectiveOrderCapacity(orderDate, p.id);
-                return window.appState.isAdmin || cap.limit <= 0 || cap.remaining > 0;
+                return isProductOpenForOrder(p.id, orderDate) && (window.appState.isAdmin || (!cutoffPassed && (cap.limit <= 0 || cap.remaining > 0)));
             });
-            const selectedId = selectableProducts.some(p => p.id === current)
-                ? current
-                : (selectableProducts[0]?.id || '');
+            const currentStillActive = products.some(p => p.id === current);
+            const selectedId = currentStillActive ? current : (window.appState.isAdmin ? (selectableProducts[0]?.id || '') : '');
             hidden.value = selectedId;
 
             picker.innerHTML = products.map(p => {
@@ -1545,10 +1632,10 @@
                 const isSelected = p.id === selectedId;
                 const soldOut = cap.limit > 0 && cap.remaining <= 0;
                 const remaining = cap.limit > 0 ? `${cap.remaining} left` : 'Unlimited';
-                const disabled = !open || soldOut;
+                const disabled = !open || soldOut || cutoffPassed;
                 const productIcon = escapeHtml(p.icon || 'fa-cookie-bite');
-                const statusText = !open ? 'Closed' : (soldOut ? 'Sold Out' : remaining);
-                const statusClass = !open || soldOut ? 'text-rose-500' : (cap.limit > 0 && cap.remaining <= Math.max(2, Math.ceil(cap.limit * 0.2)) ? 'text-amber-600' : 'text-emerald-600');
+                const statusText = cutoffPassed ? 'Cutoff passed' : (!open ? 'Closed' : (soldOut ? 'Sold Out' : remaining));
+                const statusClass = cutoffPassed || !open || soldOut ? 'text-rose-500' : (cap.limit > 0 && cap.remaining <= Math.max(2, Math.ceil(cap.limit * 0.2)) ? 'text-amber-600' : 'text-emerald-600');
                 const unitPrice = Number(p.defaultPrice || 0);
                 const rawImage = String(p.imageUrl || p.image || p.photo || '').trim();
                 const visual = rawImage
@@ -1569,7 +1656,8 @@
             }).join('');
 
             if (hint) {
-                if (!selectableProducts.length && !window.appState.isAdmin) hint.innerText = `All products are sold out for ${orderDate}.`;
+                if (cutoffPassed) hint.innerText = `Today's ${formatCutoffTime()} Malaysia-time cutoff has passed. Select a future date.`;
+                else if (!selectableProducts.length && !window.appState.isAdmin) hint.innerText = `All products are sold out for ${orderDate}.`;
                 else hint.innerText = `${selectableProducts.length} product${selectableProducts.length === 1 ? '' : 's'} available for ${orderDate}. Tap a product to choose.`;
             }
             syncOrderQuantityControls(true);
@@ -1657,7 +1745,7 @@
         }
 
         function getOrderQuantityLimit() {
-            const date = document.getElementById('orderDate')?.value || localDateStr();
+            const date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
             const productId = document.getElementById('orderProduct')?.value || '';
             const editId = document.getElementById('orderEditId')?.value || '';
             if (!productId) return { max: 0, cap: null };
@@ -1951,7 +2039,7 @@
 
         window.selectOrderProduct = function(productId) {
             const hidden = document.getElementById('orderProduct');
-            const date = document.getElementById('orderDate')?.value || localDateStr();
+            const date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
             if (!hidden) return;
             const isAdmin = window.appState.isAdmin;
             if (!isAdmin && !isProductOpenForOrder(productId, date)) {
@@ -1965,7 +2053,9 @@
             syncOrderQuantityControls(true);
             renderOrderProductSelector();
             syncOrderQuantityControls(true);
+            renderGallery();
             renderOrderCapacity();
+            renderOrderCalendar();
             renderOrderPriceSummary();
         };
 
@@ -2005,7 +2095,7 @@
                         </div>
                         <button onclick="saveProductDailyLimit('${escapeHtml(p.id)}')" class="bg-choco-700 hover:bg-choco-800 text-white font-bold px-3 py-2 rounded-lg text-[9px]"><i class="fa-solid fa-floppy-disk mr-1"></i>Save</button>
                     </div>
-                    ${cfg.mode === 'dates' ? `<div class="flex items-end gap-2 bg-slate-50 rounded-lg p-2"><div class="flex-1"><label class="text-[9px] font-semibold text-slate-500">Add order date</label><input type="date" id="productScheduleDate-${escapeHtml(p.id)}" value="${escapeHtml(selectedDates[0] || document.getElementById('orderDate')?.value || localDateStr())}" class="w-full mt-1 border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] focus:ring-2 focus:ring-choco-600 focus:outline-none bg-white"></div><button onclick="addProductAvailabilityDate('${escapeHtml(p.id)}')" class="bg-choco-700 text-white font-bold px-3 py-2 rounded-lg text-[9px]"><i class="fa-solid fa-plus mr-1"></i>Add</button></div>
+                    ${cfg.mode === 'dates' ? `<div class="flex items-end gap-2 bg-slate-50 rounded-lg p-2"><div class="flex-1"><label class="text-[9px] font-semibold text-slate-500">Add order date</label><input type="date" id="productScheduleDate-${escapeHtml(p.id)}" value="${escapeHtml(selectedDates[0] || document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date)}" class="w-full mt-1 border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] focus:ring-2 focus:ring-choco-600 focus:outline-none bg-white"></div><button onclick="addProductAvailabilityDate('${escapeHtml(p.id)}')" class="bg-choco-700 text-white font-bold px-3 py-2 rounded-lg text-[9px]"><i class="fa-solid fa-plus mr-1"></i>Add</button></div>
                     <div class="flex flex-wrap gap-1.5">${selectedDates.length ? selectedDates.map(d => `<span class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-1 text-[8px] font-bold text-slate-600">${escapeHtml(new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' }))}<button onclick="removeProductAvailabilityDate('${escapeHtml(p.id)}','${d}')" class="text-rose-500 hover:text-rose-700" title="Remove date"><i class="fa-solid fa-xmark"></i></button></span>`).join('') : '<span class="text-[8px] text-slate-400 italic">Add one or more dates. Customers will only see these dates.</span>'}</div>` : ''}
                 </div>`;
             }).join('');
@@ -2091,12 +2181,20 @@
             const saleDateInput = document.getElementById('saleDate');
             if (saleDateInput) saleDateInput.value = localDateStr();
             const orderDateInput = document.getElementById('orderDate');
-            if (orderDateInput) orderDateInput.value = localDateStr();
+            if (orderDateInput) orderDateInput.value = getMalaysiaDateTimeParts().date;
 
             setupDatabaseListeners();
             // Customer mode opens directly on the Order page. Admin login still redirects to Dashboard.
             window.appState.activeTab = window.appState.isAdmin ? (pendingAdminTab === 'orders' ? 'orders' : 'dashboard') : 'orders';
             renderAllViews();
+            renderOrderCutoffNotice();
+            if (!window.orderCutoffRefreshInterval) window.orderCutoffRefreshInterval = setInterval(() => {
+                renderOrderCutoffNotice();
+                renderOrderProductSelector();
+                renderOrderCapacity();
+                renderOrderCalendar();
+                renderGallery();
+            }, 60000);
             // Apply the active tab visibility on first load so the default Customer page is truly Order.
             switchTab(window.appState.activeTab);
             restorePendingOrderReceipt();
@@ -2197,6 +2295,9 @@
                 window.appState.settings.productAvailability = data.productAvailability && typeof data.productAvailability === 'object' ? data.productAvailability : {};
                 window.appState.settings.productDailyLimits = data.productDailyLimits && typeof data.productDailyLimits === 'object' ? data.productDailyLimits : {};
                 window.appState.settings.orderNotice = String(data.customerNotice || '');
+                window.appState.settings.orderCutoffTime = String(data.cutoffTime || '20:00');
+                const cutoffInput = document.getElementById('orderCutoffTime');
+                if (cutoffInput && document.activeElement !== cutoffInput) cutoffInput.value = getConfiguredOrderCutoffTime();
                 const noticeInput = document.getElementById('orderNoticeInput');
                 if (noticeInput && document.activeElement !== noticeInput) noticeInput.value = window.appState.settings.orderNotice;
                     renderOrderProductSelector();
@@ -2204,6 +2305,7 @@
                 updateDateLimitAdminUi();
                 renderOrderProductAvailabilityAdmin();
                 renderOrderNotice();
+                renderOrderCutoffNotice();
                 renderOrders();
                 renderOrderCapacity();
                 renderOrderCalendar();
@@ -2213,6 +2315,7 @@
                 const data = snapshot.val();
                 window.appState.reviews = data ? Object.keys(data).map(key => ({ id: key, ...data[key], productId: data[key].productId || 'kek-batik' })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)) : [];
                 renderReviews();
+                renderGallery();
             });
 
             onValue(getDbRef('settings/qr_config'), (snapshot) => {
@@ -2248,8 +2351,8 @@
             renderNavigation();
             if (tabName === 'dashboard') setTimeout(renderProfitChart, 80);
             if (tabName === 'sales') { renderSalesMonthFilter(); renderSales(); }
-            if (tabName === 'orders') renderOrders();
-            if (tabName === 'gallery') renderGallery();
+            if (tabName === 'orders') { renderOrders(); renderOrderCutoffNotice(); }
+            if (tabName === 'orders') renderGallery();
         };
 
         window.toggleAdminSidebar = function() {
@@ -2278,7 +2381,6 @@
                     { id: 'ingredients', label: 'Ingredients', icon: 'fa-calculator' }
                 ]},
                 { group: 'Customer', tabs: [
-                    { id: 'gallery', label: 'Gallery', icon: 'fa-images' },
                     { id: 'reviews', label: 'Reviews', icon: 'fa-heart' }
                 ]},
                 { group: 'System', tabs: [
@@ -2287,7 +2389,6 @@
             ];
             const customerTabs = [
                 { id: 'orders', label: 'Order', icon: 'fa-bag-shopping' },
-                { id: 'gallery', label: 'Gallery', icon: 'fa-images' },
                 { id: 'reviews', label: 'Reviews', icon: 'fa-heart' },
                 { id: 'pay', label: 'Pay & QR', icon: 'fa-qrcode' }
             ];
@@ -2321,7 +2422,7 @@
             }
 
             // Customer mode: Order is the default landing page.
-            if (!['orders', 'gallery', 'reviews', 'pay'].includes(window.appState.activeTab)) {
+            if (!['orders', 'reviews', 'pay'].includes(window.appState.activeTab)) {
                 window.appState.activeTab = 'orders';
             }
 
@@ -2410,6 +2511,9 @@
             document.getElementById('productDefaultPrice').value = '';
             document.getElementById('productYield').value = '10';
             document.getElementById('productIcon').value = 'fa-cookie-bite';
+            document.getElementById('productCategory').value = 'Kek Batik';
+            document.getElementById('productSize').value = '';
+            document.getElementById('productDescription').value = '';
             const saveBtn = document.getElementById('productSaveBtn');
             const cancelBtn = document.getElementById('productCancelEditBtn');
             if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Product';
@@ -2429,6 +2533,9 @@
             document.getElementById('productDefaultPrice').value = Number(product.defaultPrice || 0).toFixed(2);
             document.getElementById('productYield').value = Math.max(1, Number(product.yieldCount || 10));
             document.getElementById('productIcon').value = product.icon || 'fa-cookie-bite';
+            document.getElementById('productCategory').value = getProductCategory(product);
+            document.getElementById('productSize').value = product.size || '';
+            document.getElementById('productDescription').value = product.description || '';
             const saveBtn = document.getElementById('productSaveBtn');
             const cancelBtn = document.getElementById('productCancelEditBtn');
             if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save Changes';
@@ -2442,6 +2549,9 @@
             const defaultPrice = parseFloat(document.getElementById('productDefaultPrice').value) || 0;
             const yieldCount = Math.max(1, parseInt(document.getElementById('productYield').value) || 10);
             const icon = document.getElementById('productIcon').value || 'fa-cookie-bite';
+            const category = document.getElementById('productCategory').value || 'Other';
+            const size = document.getElementById('productSize').value.trim();
+            const description = document.getElementById('productDescription').value.trim();
             const editId = document.getElementById('productEditId').value.trim();
             if (!name) return showToast('Please enter a product name.', 'error');
 
@@ -2451,7 +2561,7 @@
                 const duplicate = window.appState.products.some(p => p.id !== editId && p.name.toLowerCase() === name.toLowerCase());
                 if (duplicate) return showToast('Another product already uses that name.', 'error');
                 try {
-                    const updatedProduct = { ...existing, name, defaultPrice, yieldCount, icon };
+                    const updatedProduct = { ...existing, name, defaultPrice, yieldCount, icon, category, size, description };
                     await set(getDbRef(`products/${editId}`), updatedProduct);
                     resetProductForm();
                     showToast(`${name} updated successfully!`, 'success');
@@ -2462,7 +2572,7 @@
             const id = slugify(name);
             if (window.appState.products.some(p => p.id === id || p.name.toLowerCase() === name.toLowerCase())) return showToast('That product already exists.', 'error');
             try {
-                const product = { name, defaultPrice, yieldCount, icon, active: true, createdAt: Date.now() };
+                const product = { name, defaultPrice, yieldCount, icon, category, size, description, active: true, createdAt: Date.now() };
                 await set(getDbRef(`products/${id}`), product);
                 resetProductForm();
                 showToast(`${name} added successfully!`, 'success');
@@ -3110,8 +3220,7 @@
         }
 
         function dateOffsetStr(offset = 0) {
-            const d = new Date();
-            d.setHours(12, 0, 0, 0);
+            const d = new Date(`${getMalaysiaDateTimeParts().date}T12:00:00`);
             d.setDate(d.getDate() + offset);
             return localDateStr(d);
         }
@@ -3142,80 +3251,125 @@
             for (let i = 0; i < 90; i++) {
                 const date = dateOffsetStr(i);
                 const cap = getOrderCapacity(date);
-                if (!cap.closed && (cap.limit <= 0 || cap.booked < cap.limit) && getOrderableProducts(date).length) return date;
+                if (!cap.closed && !isOrderCutoffPassedForDate(date) && (cap.limit <= 0 || cap.booked < cap.limit) && getOrderableProducts(date).length) return date;
             }
             return getNextWorkingOrderDates(1)[0] || localDateStr();
         }
 
         window.selectOrderCalendarDate = function(date) {
-            const cap = getOrderCapacity(date, document.getElementById('orderEditId')?.value || '');
-            if (!window.appState.isAdmin && (!isWorkingOrderDate(date) || cap.closed || cap.full)) return;
+            const editId = document.getElementById('orderEditId')?.value || '';
+            const productId = document.getElementById('orderProduct')?.value || '';
+            const cap = productId ? getEffectiveOrderCapacity(date, productId, editId) : getOrderCapacity(date, editId);
+            const productOpen = productId ? isProductOpenForOrder(productId, date) : getCalendarProductsForDate(date).length > 0;
+            if (!window.appState.isAdmin && (!isWorkingOrderDate(date) || isOrderCutoffPassedForDate(date) || isOrderDateClosed(date) || !productOpen || cap.full)) return;
             const input = document.getElementById('orderDate');
             if (input) input.value = date;
             renderOrderProductSelector();
             if (window.appState.isAdmin) {
                 const adminDate = document.getElementById('dateLimitDate');
                 if (adminDate) adminDate.value = date;
-                }
+            }
             renderOrderCapacity();
             renderOrderCalendar();
+            renderOrderPriceSummary();
         };
 
         window.renderOrderCalendar = function() {
             const grid = document.getElementById('orderCalendarGrid');
             if (!grid) return;
             const selected = document.getElementById('orderDate')?.value || '';
+            const selectedProductId = document.getElementById('orderProduct')?.value || '';
+            const selectedProduct = selectedProductId ? getProduct(selectedProductId) : null;
             const isAdmin = window.appState.isAdmin;
-            const cards = [];
+            const title = document.getElementById('orderCalendarTitle');
+            const hint = document.getElementById('orderCalendarHint');
+            const firstWindow = getNextWorkingOrderDates(7);
+            const nextProductDate = selectedProduct ? getNextAvailableProductDate(selectedProduct.id) : '';
+            const firstProductDateOutsideWindow = Boolean(nextProductDate && !firstWindow.includes(nextProductDate));
+            let calendarDates = firstWindow;
+            if (firstProductDateOutsideWindow) {
+                const today = new Date(`${getMalaysiaDateTimeParts().date}T12:00:00`);
+                const nextDate = new Date(`${nextProductDate}T12:00:00`);
+                const offset = Math.max(0, Math.round((nextDate - today) / 86400000));
+                calendarDates = Array.from({ length: 7 }, (_, index) => dateOffsetStr(offset + index));
+            }
+            if (title) title.innerHTML = `<i class="fa-solid fa-calendar-days text-choco-600"></i> ${selectedProduct ? `Dates for ${escapeHtml(selectedProduct.name)}` : 'Available Order Dates'}`;
+            if (hint) hint.innerText = selectedProduct
+                ? (firstProductDateOutsideWindow
+                    ? `Showing the next seven days from ${formatProductDateLabel(nextProductDate)} because this cake's next availability is further ahead. Remaining boxes are shown for each date.`
+                    : `Only dates when ${selectedProduct.name} can be ordered are enabled. Remaining boxes are shown for each date.`)
+                : 'Select a cake above to see exactly which dates are available for that product. Orders are accepted seven days a week.';
 
-            for (const date of getNextWorkingOrderDates(7)) {
+            const cards = [];
+            for (const date of calendarDates) {
                 const label = formatOrderCalendarDate(date);
                 const dateClosed = isOrderDateClosed(date);
-                const products = getCalendarProductsForDate(date);
+                const cutoffPassed = !isAdmin && isOrderCutoffPassedForDate(date);
+                const products = selectedProduct
+                    ? [selectedProduct]
+                    : getCalendarProductsForDate(date);
                 const statuses = products.map(product => ({
                     product,
-                    status: getCalendarProductStatus(date, product.id)
+                    status: getCalendarProductStatus(date, product.id),
+                    scheduledOpen: isProductOpenForOrder(product.id, date)
                 }));
-                const availableStatuses = statuses.filter(({ status }) => status.cap.limit <= 0 || status.cap.remaining > 0);
-                const noProduct = products.length === 0;
-                const noCapacity = products.length > 0 && availableStatuses.length === 0;
-                const blockedForCustomer = !isAdmin && (dateClosed || noProduct || noCapacity);
+                const availableStatuses = statuses.filter(({ status, scheduledOpen }) => scheduledOpen && (status.cap.limit <= 0 || status.cap.remaining > 0));
+                const noProduct = !selectedProduct && products.length === 0;
+                const selectedNotScheduled = Boolean(selectedProduct && !isProductOpenForOrder(selectedProduct.id, date));
+                const selectedSoldOut = Boolean(selectedProduct && isProductOpenForOrder(selectedProduct.id, date) && statuses[0] && statuses[0].status.cap.limit > 0 && statuses[0].status.cap.remaining <= 0);
+                const noCapacity = selectedProduct ? selectedSoldOut : (products.length > 0 && availableStatuses.length === 0);
+                const blockedForCustomer = !isAdmin && (cutoffPassed || dateClosed || noProduct || selectedNotScheduled || noCapacity);
 
                 let statusText = 'OPEN';
                 let statusClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                 if (dateClosed) {
                     statusText = 'CLOSED';
                     statusClass = 'bg-slate-100 text-slate-600 border-slate-200';
+                } else if (cutoffPassed) {
+                    statusText = 'CUT-OFF';
+                    statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
+                } else if (selectedNotScheduled) {
+                    statusText = 'NOT SCHEDULED';
+                    statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
                 } else if (noProduct) {
                     statusText = 'NO PRODUCTS';
                     statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
                 } else if (noCapacity) {
-                    statusText = 'FULL';
+                    statusText = 'SOLD OUT';
                     statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
                 } else if (availableStatuses.some(({ status }) => status.cap.limit > 0 && status.cap.remaining <= Math.max(2, Math.ceil(status.cap.limit * 0.2)))) {
                     statusText = 'LIMITED';
                     statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
                 }
 
-                const productRows = dateClosed
-                    ? `<div class="mt-2 text-[9px] font-semibold text-slate-400">Orders are closed for this date.</div>`
-                    : noProduct
-                        ? `<div class="mt-2 text-[9px] font-semibold text-rose-500">No products scheduled.</div>`
-                        : `<div class="mt-2 space-y-1.5 max-h-28 overflow-y-auto pr-0.5">${statuses.map(({ product, status }) => {
-                            const isFull = status.cap.limit > 0 && status.cap.remaining <= 0;
-                            const textClass = isFull ? 'text-rose-600' : status.cap.limit > 0 && status.cap.remaining <= Math.max(2, Math.ceil(status.cap.limit * 0.2)) ? 'text-amber-700' : 'text-emerald-700';
-                            return `
-                                <div class="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/70 px-2 py-1.5">
-                                    <div class="min-w-0 flex items-center gap-1.5">
-                                        <span class="w-5 h-5 rounded-md bg-white border border-slate-100 flex items-center justify-center text-choco-600 shrink-0"><i class="fa-solid ${escapeHtml(getProductIcon(product.id))} text-[8px]"></i></span>
-                                        <div class="min-w-0">
-                                            <div class="text-[9px] font-bold text-choco-900 truncate">${escapeHtml(product.name)}</div>
-                                            <div class="text-[8px] text-slate-400">${escapeHtml(status.detail)}</div>
-                                        </div>
+                let productRows = '';
+                if (dateClosed) {
+                    productRows = `<div class="mt-2 text-[9px] font-semibold text-slate-400">Orders are closed for this date.</div>`;
+                } else if (cutoffPassed) {
+                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-600">Today’s ${escapeHtml(formatCutoffTime())} cutoff has passed. Choose a future date.</div>`;
+                } else if (selectedNotScheduled) {
+                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-600">${escapeHtml(selectedProduct.name)} is not scheduled for this date.</div>`;
+                } else if (noProduct) {
+                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-500">No products scheduled.</div>`;
+                } else if (selectedSoldOut) {
+                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-600">${escapeHtml(selectedProduct.name)} is fully booked for this date.</div>`;
+                } else {
+                    productRows = `<div class="mt-2 space-y-1.5 max-h-28 overflow-y-auto pr-0.5">${statuses.filter(({ scheduledOpen }) => selectedProduct || scheduledOpen).map(({ product, status }) => {
+                        const isFull = status.cap.limit > 0 && status.cap.remaining <= 0;
+                        const textClass = isFull ? 'text-rose-600' : status.cap.limit > 0 && status.cap.remaining <= Math.max(2, Math.ceil(status.cap.limit * 0.2)) ? 'text-amber-700' : 'text-emerald-700';
+                        return `
+                            <div class="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/70 px-2 py-1.5">
+                                <div class="min-w-0 flex items-center gap-1.5">
+                                    <span class="w-5 h-5 rounded-md bg-white border border-slate-100 flex items-center justify-center text-choco-600 shrink-0"><i class="fa-solid ${escapeHtml(getProductIcon(product.id))} text-[8px]"></i></span>
+                                    <div class="min-w-0">
+                                        <div class="text-[9px] font-bold text-choco-900 truncate">${escapeHtml(product.name)}</div>
+                                        <div class="text-[8px] text-slate-400">${escapeHtml(status.detail)}</div>
                                     </div>
-                                    <span class="text-[8px] font-extrabold ${textClass} shrink-0">${escapeHtml(status.text)}</span>
-                                </div>`;
-                        }).join('')}</div>`;
+                                </div>
+                                <span class="text-[8px] font-extrabold ${textClass} shrink-0">${escapeHtml(status.text)}</span>
+                            </div>`;
+                    }).join('')}</div>`;
+                }
 
                 cards.push(`
                     <button type="button" onclick="selectOrderCalendarDate('${date}')" ${blockedForCustomer ? 'disabled' : ''}
@@ -3233,6 +3387,44 @@
             grid.innerHTML = cards.join('');
         };
 
+        function renderOrderCutoffNotice() {
+            const card = document.getElementById('orderCutoffNotice');
+            const title = document.getElementById('orderCutoffTitle');
+            const message = document.getElementById('orderCutoffMessage');
+            if (!card || !title || !message) return;
+            const isAdmin = window.appState.isAdmin;
+            const cutoff = getConfiguredOrderCutoffTime();
+            const passed = isOrderCutoffPassedForDate(getMalaysiaDateTimeParts().date);
+            if (passed) {
+                card.className = `rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[10px] leading-relaxed text-rose-900${isAdmin ? ' hidden' : ''}`;
+                title.innerText = 'Today’s order cutoff has passed';
+                message.innerText = `Same-day ordering closed at ${formatCutoffTime(cutoff)} Malaysia time. You can still order for a future date.`;
+            } else {
+                card.className = `rounded-2xl border border-choco-200 bg-choco-50/70 px-3.5 py-3 text-[10px] leading-relaxed text-choco-900${isAdmin ? ' hidden' : ''}`;
+                title.innerText = 'Same-day order cutoff';
+                message.innerText = `Place same-day orders before ${formatCutoffTime(cutoff)} Malaysia time. Future-date ordering remains available after the cutoff.`;
+            }
+        }
+
+        window.handleSaveOrderCutoff = async function() {
+            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
+            const input = document.getElementById('orderCutoffTime');
+            const cutoffTime = String(input?.value || '').trim();
+            if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(cutoffTime)) return showToast('Please choose a valid cutoff time.', 'error');
+            try {
+                await set(getDbRef('settings/order_config/cutoffTime'), cutoffTime);
+                window.appState.settings.orderCutoffTime = cutoffTime;
+                renderOrderCutoffNotice();
+                renderOrderProductSelector();
+                renderOrderCapacity();
+                renderOrderCalendar();
+                showToast(`Same-day order cutoff saved: ${formatCutoffTime(cutoffTime)} Malaysia time.`, 'success');
+            } catch (err) {
+                console.error('Failed to save order cutoff:', err);
+                showToast('Could not save cutoff time. Please try again.', 'error');
+            }
+        };
+
         function renderOrderNotice() {
             const card = document.getElementById('orderCustomerNoticeCard');
             const textEl = document.getElementById('orderCustomerNoticeText');
@@ -3243,7 +3435,7 @@
         }
 
         window.renderOrderCapacity = function() {
-            const date = document.getElementById('orderDate')?.value || localDateStr();
+            const date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
             const editId = document.getElementById('orderEditId')?.value || '';
             const qty = Math.max(1, parseInt(document.getElementById('orderQty')?.value || '1') || 1);
             const selectedProductId = document.getElementById('orderProduct')?.value || '';
@@ -3262,6 +3454,14 @@
                 if (badgeEl) {
                     badgeEl.innerText = 'Unavailable';
                     badgeEl.className = 'bg-slate-500/30 border border-white/20 text-white px-2.5 py-1 rounded-full text-[10px] font-bold';
+                }
+                if (barEl) barEl.style.width = '100%';
+            } else if (!isAdmin && isOrderCutoffPassedForDate(date)) {
+                if (textEl) textEl.innerText = 'Same-day cutoff passed';
+                if (hintEl) hintEl.innerText = `Today’s order cutoff was ${formatCutoffTime()} Malaysia time. Please choose a future date.`;
+                if (badgeEl) {
+                    badgeEl.innerText = 'Cut-off';
+                    badgeEl.className = 'bg-rose-500/20 border border-rose-300/30 text-rose-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
                 }
                 if (barEl) barEl.style.width = '100%';
             } else if (cap.closed) {
@@ -3298,8 +3498,9 @@
             const blockedByNoProduct = !isAdmin && (!selectedProductId || !isProductOpenForOrder(selectedProductId, date));
             const blockedByNonWorkingDay = !isAdmin && !isWorkingOrderDate(date);
             const blockedByClosedDate = !isAdmin && cap.closed;
+            const blockedByCutoff = !isAdmin && isOrderCutoffPassedForDate(date);
             const blockedByLimit = cap.limit > 0 && qty > cap.availableForForm;
-            if (blockedByNoProduct) {
+            if (blockedByNoProduct && !blockedByCutoff) {
                 if (textEl) textEl.innerText = 'No product open';
                 if (hintEl) hintEl.innerText = 'Please wait until Admin opens a product for ordering.';
                 if (badgeEl) {
@@ -3307,7 +3508,7 @@
                     badgeEl.className = 'bg-slate-500/30 border border-white/20 text-white px-2.5 py-1 rounded-full text-[10px] font-bold';
                 }
             }
-            const blocked = blockedByNoProduct || blockedByNonWorkingDay || blockedByClosedDate || blockedByLimit;
+            const blocked = blockedByNoProduct || blockedByNonWorkingDay || blockedByClosedDate || blockedByCutoff || blockedByLimit;
             if (saveBtn) {
                 saveBtn.dataset.capacityBlocked = blocked ? '1' : '0';
                 saveBtn.disabled = blocked || Boolean(window.orderSubmitBusy);
@@ -3441,7 +3642,7 @@
             const dateInput = document.getElementById('dateLimitDate');
             if (!dateInput) return;
             window.renderClosedDatesAdmin();
-            if (!dateInput.value) dateInput.value = document.getElementById('orderDate')?.value || localDateStr();
+            if (!dateInput.value) dateInput.value = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
             const date = dateInput.value;
             const limitInput = document.getElementById('dateOrderLimitInput');
             const source = document.getElementById('dateLimitSourceText');
@@ -3555,8 +3756,8 @@
             const qty = document.getElementById('orderQty'); if (qty) qty.value = '1';
             const date = document.getElementById('orderDate');
             if (date) {
-                date.value = window.appState.isAdmin ? localDateStr() : findNextAvailableOrderDate();
-                date.min = window.appState.isAdmin ? '' : localDateStr();
+                date.value = window.appState.isAdmin ? getMalaysiaDateTimeParts().date : findNextAvailableOrderDate();
+                date.min = window.appState.isAdmin ? '' : getMalaysiaDateTimeParts().date;
             }
             const customer = document.getElementById('orderCustomer'); if (customer) customer.value = '';
             const placeSelect = document.getElementById('orderPlace'); if (placeSelect) placeSelect.value = '';
@@ -3680,16 +3881,18 @@
 
         window.handleSaveOrder = async function() {
             const isAdmin = window.appState.isAdmin;
-            const productId = document.getElementById('orderProduct').value || 'kek-batik';
+            const productId = document.getElementById('orderProduct').value || '';
             const qty = parseInt(document.getElementById('orderQty').value);
-            const date = document.getElementById('orderDate').value || localDateStr();
+            const date = document.getElementById('orderDate').value || getMalaysiaDateTimeParts().date;
             const customer = document.getElementById('orderCustomer').value.trim();
             const editId = isAdmin ? document.getElementById('orderEditId').value.trim() : '';
             const status = isAdmin ? (document.getElementById('orderStatus').value || 'Pending') : 'Pending';
             if (!Number.isFinite(qty) || qty < 1) return showToast('Quantity must be at least 1.', 'error');
-            if (!isAdmin && (!productId || !isProductOpenForOrder(productId, date))) return showToast('This product is not open for ordering right now.', 'error');
+            if (!isAdmin && date < getMalaysiaDateTimeParts().date) return showToast('Please choose today or a future date.', 'error');
+            if (!isAdmin && isOrderCutoffPassedForDate(date)) return showToast(`Same-day orders close at ${formatCutoffTime()} Malaysia time. Please choose a future date.`, 'error');
+            if (!isAdmin && !productId) return showToast('Please select a cake photo above before placing your order.', 'error');
+            if (!isAdmin && (!isProductOpenForOrder(productId, date) || isOrderDateClosed(date))) return showToast('This product is not open for ordering on the selected date. Please choose one of its available dates above.', 'error');
             if (!isAdmin && !customer) return showToast('Please enter your name.', 'error');
-            if (!isAdmin && date < localDateStr()) return showToast('Please choose today or a future date.', 'error');
             if (!isAdmin && !isWorkingOrderDate(date)) return showToast('Please choose a valid order date.', 'error');
             if (!isAdmin && isOrderDateClosed(date)) return showToast(`${date} is closed for orders. Please choose another date.`, 'error');
             if (!isAdmin) {
@@ -4460,6 +4663,9 @@
             const grid = document.getElementById('customerGalleryGrid');
             const adminCard = document.getElementById('galleryAdminUploadCard');
             const productSelect = document.getElementById('galleryProductSelect');
+            const searchInput = document.getElementById('gallerySearchInput');
+            const categoryFilter = document.getElementById('galleryCategoryFilter');
+            const countEl = document.getElementById('galleryProductsCount');
             if (adminCard) adminCard.classList.toggle('hidden', !window.appState.isAdmin);
             if (productSelect) {
                 const current = productSelect.value;
@@ -4467,50 +4673,87 @@
                 if (window.appState.products.some(product => product.id === current)) productSelect.value = current;
             }
             if (!grid) return;
+
             const products = window.appState.products.filter(product => product.active !== false);
+            const categories = [...new Set(products.map(getProductCategory))].sort((a, b) => a.localeCompare(b));
+            if (categoryFilter) {
+                const currentCategory = categoryFilter.value || 'all';
+                categoryFilter.innerHTML = `<option value="all">All categories</option>` + categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
+                categoryFilter.value = categories.includes(currentCategory) ? currentCategory : 'all';
+            }
             if (!products.length) {
-                grid.innerHTML = '<div class="col-span-2 text-center py-10 text-xs text-slate-400">No products in the gallery yet.</div>';
+                if (countEl) countEl.innerText = 'No products available yet';
+                grid.innerHTML = '<div class="col-span-2 text-center py-10 px-4 text-xs text-slate-400 bg-white rounded-2xl border border-choco-100">Our cake gallery is being prepared. Please check back soon.</div>';
                 return;
             }
-            grid.innerHTML = products.map(product => {
+
+            const query = String(searchInput?.value || '').trim().toLowerCase();
+            const selectedCategory = categoryFilter?.value || 'all';
+            const filtered = products.filter(product => {
+                const searchable = [product.name, product.description, product.size, getProductCategory(product)].join(' ').toLowerCase();
+                return (!query || searchable.includes(query)) && (selectedCategory === 'all' || getProductCategory(product) === selectedCategory);
+            });
+            if (countEl) countEl.innerText = `${filtered.length} of ${products.length} product${products.length === 1 ? '' : 's'} · browse photos, price and reviews`;
+            if (!filtered.length) {
+                grid.innerHTML = '<div class="col-span-2 text-center py-10 px-4 text-xs text-slate-400 bg-white rounded-2xl border border-choco-100"><i class="fa-solid fa-magnifying-glass text-xl text-choco-300 mb-2"></i><div class="font-bold text-slate-500">No matching products</div><div class="mt-1">Try another search or category.</div></div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(product => {
                 const image = String(product.imageUrl || product.image || product.photo || '').trim();
+                const category = getProductCategory(product);
+                const isSelected = document.getElementById('orderProduct')?.value === product.id;
                 const visual = image
-                    ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)}" class="gallery-product-image cursor-zoom-in" onclick="window.openLightbox(this.src)">`
-                    : `<div class="gallery-product-image flex items-center justify-center text-5xl text-choco-400"><i class="fa-solid ${escapeHtml(product.icon || 'fa-cookie-bite')}"></i></div>`;
-                return `<article class="gallery-product-card bg-white border border-choco-100 rounded-2xl shadow-sm">
-                    ${visual}
-                    <div class="p-3 space-y-2">
-                        <div class="font-bold text-choco-900 text-xs leading-snug min-h-8">${escapeHtml(product.name)}</div>
-                        <div class="text-base font-extrabold text-choco-700">RM ${Number(product.defaultPrice || 0).toFixed(2)} <span class="text-[9px] font-semibold text-slate-400">/ box</span></div>
-                        <button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" class="w-full bg-choco-700 hover:bg-choco-800 text-white py-2.5 rounded-xl text-[10px] font-bold"><i class="fa-solid fa-bag-shopping mr-1"></i> Order Now</button>
+                    ? `<button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" aria-label="Select ${escapeHtml(product.name)} to order" class="block w-full relative"><img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)} product photo — tap to select" loading="lazy" class="gallery-product-image cursor-pointer"><span class="absolute bottom-2 right-2 rounded-full bg-white/95 border border-choco-100 px-2 py-1 text-[8px] font-extrabold text-choco-800 shadow-sm"><i class="fa-solid fa-bag-shopping mr-1"></i>Tap to order</span></button>`
+                    : `<button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" aria-label="Select ${escapeHtml(product.name)} to order" class="gallery-product-image flex items-center justify-center text-5xl text-choco-400 cursor-pointer"><i class="fa-solid ${escapeHtml(product.icon || 'fa-cookie-bite')}"></i></button>`;
+                const productReviews = window.appState.reviews.filter(review => review.productId === product.id);
+                const averageRating = productReviews.length ? productReviews.reduce((sum, review) => sum + Math.max(0, Math.min(5, Number(review.rating || 0))), 0) / productReviews.length : 0;
+                const ratingMarkup = productReviews.length
+                    ? `<div class="flex items-center gap-1 text-[9px]"><span class="text-amber-500">${Array.from({ length: 5 }, (_, i) => `<i class="fa-solid fa-star ${i < Math.round(averageRating) ? '' : 'text-slate-200'}"></i>`).join('')}</span><span class="font-bold text-slate-500">${averageRating.toFixed(1)} (${productReviews.length})</span></div>`
+                    : `<div class="text-[9px] text-slate-400"><i class="fa-regular fa-star mr-1"></i>No reviews yet</div>`;
+                const availableDates = getAvailableProductDates(product.id, 3);
+                const nextDate = availableDates[0] || '';
+                const availability = nextDate ? availableDates.map(formatProductDateLabel).join(' · ') : 'No upcoming dates available';
+                const availableClass = nextDate ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100';
+                const description = String(product.description || '').trim();
+                const size = String(product.size || '').trim();
+                return `<article class="gallery-product-card bg-white ${isSelected ? 'border-2 border-choco-700 ring-2 ring-choco-100' : 'border border-choco-100'} rounded-2xl shadow-sm flex flex-col">
+                    <div class="relative">${visual}<span class="absolute left-2 top-2 max-w-[85%] truncate rounded-full border border-white/80 bg-white/90 px-2 py-1 text-[8px] font-extrabold text-choco-800 shadow-sm">${escapeHtml(category)}</span>${isSelected ? '<span class="absolute right-2 top-2 rounded-full bg-choco-700 text-white px-2 py-1 text-[8px] font-extrabold shadow"><i class="fa-solid fa-check mr-1"></i>Selected</span>' : ''}</div>
+                    <div class="p-3 space-y-2 flex-1 flex flex-col">
+                        <div class="font-extrabold text-choco-900 text-xs leading-snug">${escapeHtml(product.name)}</div>
+                        ${size ? `<div class="text-[9px] text-slate-500"><i class="fa-solid fa-ruler-combined mr-1 text-choco-400"></i>${escapeHtml(size)}</div>` : ''}
+                        ${description ? `<p class="text-[10px] text-slate-600 leading-relaxed line-clamp-3">${escapeHtml(description)}</p>` : `<p class="text-[10px] text-slate-400 leading-relaxed">Freshly prepared with care.</p>`}
+                        ${ratingMarkup}
+                        <div class="mt-auto pt-1">
+                            <div class="text-base font-extrabold text-choco-700">RM ${Number(product.defaultPrice || 0).toFixed(2)} <span class="text-[9px] font-semibold text-slate-400">/ box</span></div>
+                            <div class="mt-1 mb-2 rounded-xl border px-2 py-2 text-[8px] leading-relaxed font-bold ${availableClass}"><div><i class="fa-solid ${nextDate ? 'fa-calendar-check' : 'fa-circle-xmark'} mr-1"></i>${nextDate ? 'Available dates' : 'Availability'}</div><div class="mt-0.5 font-semibold">${escapeHtml(availability)}</div></div>
+                            <button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" class="w-full ${isSelected ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-choco-700 hover:bg-choco-800'} text-white py-2.5 rounded-xl text-[10px] font-bold transition"><i class="fa-solid ${isSelected ? 'fa-check' : 'fa-bag-shopping'} mr-1"></i>${isSelected ? 'Selected · View Dates' : (nextDate ? 'Choose & Order' : 'View Availability')}</button>
+                        </div>
                     </div>
                 </article>`;
             }).join('');
         }
+        // Expose the renderer because gallery search and category controls use inline event handlers.
+        window.renderGallery = renderGallery;
 
         window.orderFromGallery = function(productId) {
             const product = getProduct(productId);
             if (!product || product.active === false) return showToast('This product is not available for ordering.', 'error');
-            const orderDate = (() => {
-                for (let offset = 0; offset < 90; offset++) {
-                    const date = dateOffsetStr(offset);
-                    if (isOrderDateClosed(date) || !isProductOpenForOrder(productId, date)) continue;
-                    const cap = getEffectiveOrderCapacity(date, productId);
-                    if (cap.limit <= 0 || cap.remaining > 0) return date;
-                }
-                return '';
-            })();
-            if (!orderDate) return showToast('This product has no available order dates. Please contact the seller.', 'error');
             switchTab('orders');
+            const availableDates = getAvailableProductDates(productId, 1);
+            const orderDate = availableDates[0] || getMalaysiaDateTimeParts().date;
             const dateInput = document.getElementById('orderDate');
-            if (dateInput) dateInput.value = orderDate;
             const productInput = document.getElementById('orderProduct');
             if (productInput) productInput.value = productId;
+            if (dateInput) dateInput.value = orderDate;
             renderOrderProductSelector();
+            renderGallery();
             renderOrderCalendar();
             renderOrderCapacity();
+            renderOrderCutoffNotice();
             renderOrderPriceSummary();
-            document.getElementById('orderFormCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (!availableDates.length) showToast(`${product.name} currently has no available order dates. Please check its calendar below.`, 'info');
+            document.getElementById('orderCalendarCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
 
         window.handleSaveQrSettings = async function() {
@@ -4567,6 +4810,7 @@
             renderSales();
             renderOrders();
             renderOrderCapacity();
+            renderOrderCutoffNotice();
             renderReviews();
             renderSettingsAndPayment();
             updateCalculationsAndDashboard();
