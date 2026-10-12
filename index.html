@@ -248,9 +248,12 @@
             0% { transform: scale(0.35) rotate(-18deg); opacity: 0; }
             100% { transform: scale(1) rotate(0deg); opacity: 1; }
         }
-        .gallery-product-card { overflow: hidden; transition: transform 160ms ease, box-shadow 160ms ease; }
-        .gallery-product-card:active { transform: scale(.99); }
-        .gallery-product-image { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #f8efeb; }
+        .gallery-product-card { overflow:hidden; transition:transform 160ms ease, box-shadow 160ms ease; }
+        .gallery-product-card:active { transform:scale(.99); }
+        .gallery-product-image { width:100%; aspect-ratio:4 / 3; object-fit:cover; background:#f8efeb; }
+        .product-checkout-modal-image { width:100%; max-height:15rem; aspect-ratio:4 / 3; object-fit:cover; background:#f8efeb; }
+        .product-modal-date { min-height:3.8rem; }
+        .product-modal-date:disabled { opacity:.55; cursor:not-allowed; }
         .order-skeleton {
             position: relative;
             overflow: hidden;
@@ -655,6 +658,28 @@
 
             <!-- ================= CUSTOMER ORDERS TAB ================= -->
             <section id="tab-orders" class="tab-content hidden space-y-4">
+                <!-- Customer product gallery: tap a product to open full in-popup checkout -->
+                <div class="rounded-3xl overflow-hidden bg-gradient-to-br from-choco-800 via-choco-700 to-choco-900 text-amber-50 p-5 shadow-lg">
+                    <div class="text-[9px] uppercase tracking-[0.22em] font-extrabold text-amber-200/75">Made with love</div>
+                    <h2 class="font-serif text-2xl font-bold mt-1">Choose Your Cake</h2>
+                    <p class="text-[11px] text-amber-100/80 mt-1">Tap a cake photo to see its details, choose a date, and complete your order in one pop-up.</p>
+                </div>
+                <div id="galleryAdminUploadCard" class="hidden bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
+                    <div><h3 class="text-sm font-bold text-choco-900"><i class="fa-solid fa-camera text-choco-600 mr-1"></i> Product Gallery Manager</h3><p class="text-[10px] text-slate-500 mt-1">Upload photos and maintain the details customers see in the order pop-up.</p></div>
+                    <div><label for="galleryProductSelect" class="text-[11px] font-semibold text-slate-600">Product</label><select id="galleryProductSelect" onchange="syncGalleryProductDetailsForm()" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50"></select></div>
+                    <div class="grid grid-cols-2 gap-2"><div><label for="galleryCategory" class="text-[10px] font-semibold text-slate-600">Category</label><select id="galleryCategory" class="w-full mt-1 border border-slate-200 rounded-xl px-2 py-2 text-xs bg-slate-50"><option>Kek Batik</option><option>Cheese</option><option>Ganache</option><option>Dessert</option><option>Other</option></select></div><div><label for="gallerySize" class="text-[10px] font-semibold text-slate-600">Size / Serving</label><input id="gallerySize" maxlength="60" placeholder="e.g. 500g / 6 slices" class="w-full mt-1 border border-slate-200 rounded-xl px-2 py-2 text-xs bg-slate-50"></div></div>
+                    <div><label for="galleryDescription" class="text-[10px] font-semibold text-slate-600">Product Description</label><textarea id="galleryDescription" rows="2" maxlength="280" placeholder="Flavour, texture, ingredients…" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50"></textarea></div>
+                    <div><label for="galleryImageFile" class="text-[10px] font-semibold text-slate-600">Product Photo</label><input id="galleryImageFile" type="file" accept="image/*" onchange="handleGalleryImageSelected(event)" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50"><p class="text-[9px] text-slate-400 mt-1">Photos are resized before saving.</p></div>
+                    <div id="galleryImagePreviewWrap" class="hidden rounded-xl bg-choco-50 p-2"><img id="galleryImagePreview" alt="Product preview" class="w-full max-h-48 object-contain rounded-lg"></div>
+                    <button type="button" onclick="handleSaveGalleryProductDetails()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-3 rounded-xl text-xs"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Save Product Details</button>
+                </div>
+                <div class="bg-white border border-choco-100 rounded-2xl p-3 space-y-3 shadow-sm">
+                    <div class="flex items-center justify-between gap-2"><div><div class="text-xs font-extrabold text-choco-900">Our Cakes & Desserts</div><div id="galleryProductsCount" class="text-[9px] text-slate-400 mt-0.5">Choose your favourite</div></div><i class="fa-solid fa-magnifying-glass text-choco-400"></i></div>
+                    <input id="gallerySearchInput" type="search" oninput="renderGallery()" placeholder="Search cakes and desserts…" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
+                    <select id="galleryCategoryFilter" onchange="renderGallery()" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white"><option value="all">All categories</option></select>
+                </div>
+                <div id="customerGalleryGrid" class="grid grid-cols-2 gap-3"></div>
+
                 <!-- Customer notice configured by Admin -->
                 <div id="orderCustomerNoticeCard" class="hidden bg-amber-50 border border-amber-200 p-3.5 rounded-2xl card-shadow">
                     <div class="flex items-start gap-2.5">
@@ -666,53 +691,7 @@
                     </div>
                 </div>
 
-                <!-- Merged Gallery + Order: choose a product here and the calendar below will show its dates. -->
-                <div class="rounded-3xl overflow-hidden bg-gradient-to-br from-choco-800 via-choco-700 to-choco-900 text-amber-50 p-5 shadow-lg">
-                    <div class="text-[9px] uppercase tracking-[0.22em] font-extrabold text-amber-200/75">Made with love</div>
-                    <h2 class="font-serif text-2xl font-bold mt-1">Choose Your Cake</h2>
-                    <p class="text-[11px] text-amber-100/80 mt-1">Tap a product photo to select it, see the dates available for that cake, and place your order below.</p>
-                </div>
-
-                <div id="galleryAdminUploadCard" class="hidden bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-3">
-                    <div>
-                        <h3 class="text-sm font-bold text-choco-900 flex items-center gap-2"><i class="fa-solid fa-camera text-choco-600"></i> Manage Gallery Pictures</h3>
-                        <p class="text-[10px] leading-relaxed text-slate-500 mt-1">Choose a product and upload its photo. The picture will appear in this Order page so customers can tap it to select the cake and view its dates.</p>
-                    </div>
-                    <div>
-                        <label for="galleryProductSelect" class="text-[11px] font-semibold text-slate-600">Product</label>
-                        <select id="galleryProductSelect" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50 focus:ring-2 focus:ring-choco-600 focus:outline-none"></select>
-                    </div>
-                    <div>
-                        <label for="galleryImageFile" class="text-[11px] font-semibold text-slate-600">Product Picture</label>
-                        <input id="galleryImageFile" type="file" accept="image/*" onchange="handleGalleryImageSelected(event)" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50 file:mr-3 file:border-0 file:bg-choco-100 file:text-choco-800 file:px-3 file:py-1.5 file:rounded-lg">
-                        <p class="text-[9px] text-slate-400 mt-1">Images are resized before saving to Firebase.</p>
-                    </div>
-                    <div id="galleryImagePreviewWrap" class="hidden border border-choco-100 rounded-2xl p-2 bg-choco-50/50">
-                        <img id="galleryImagePreview" alt="Selected product preview" class="w-full max-h-56 object-contain rounded-xl">
-                    </div>
-                    <button type="button" onclick="handleSaveGalleryImage()" class="w-full bg-choco-700 hover:bg-choco-800 text-white font-bold py-3 rounded-xl text-xs shadow-sm"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Save Picture to Gallery</button>
-                </div>
-
-                <div class="bg-white border border-choco-100 rounded-2xl p-3 space-y-3 shadow-sm">
-                    <div class="flex items-center justify-between gap-2"><div><div class="text-xs font-extrabold text-choco-900">Find your favourite</div><div id="galleryProductsCount" class="text-[9px] text-slate-400 mt-0.5">Browse cakes and desserts</div></div><i class="fa-solid fa-magnifying-glass text-choco-400"></i></div>
-                    <input id="gallerySearchInput" type="search" oninput="renderGallery()" placeholder="Search cake, cheese, chocolate…" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
-                    <select id="galleryCategoryFilter" onchange="renderGallery()" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none"><option value="all">All categories</option></select>
-                </div>
-                <div id="customerGalleryGrid" class="grid grid-cols-2 gap-3"></div>
-
-                <!-- Upgrade 1: simple upcoming order calendar -->
-                <div id="orderCalendarCard" class="bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h3 id="orderCalendarTitle" class="text-xs font-bold uppercase tracking-wider text-choco-900 flex items-center gap-1.5"><i class="fa-solid fa-calendar-days text-choco-600"></i> Available Order Dates</h3>
-                            <p id="orderCalendarHint" class="text-[10px] text-slate-500 mt-1">Select a cake above to see exactly which dates are available for that product. Orders are accepted seven days a week.</p>
-                        </div>
-                        <span class="text-[9px] font-bold text-choco-700 bg-choco-50 border border-choco-100 px-2 py-1 rounded-full shrink-0">7 Days / Week</span>
-                    </div>
-                    <div id="orderCalendarGrid" class="grid grid-cols-2 gap-2"></div>
-                </div>
-
-                <div class="bg-gradient-to-r from-choco-800 to-choco-900 text-amber-100 p-4 rounded-2xl shadow-lg border border-choco-700 space-y-3">
+                <div id="orderCapacityCard" class="bg-gradient-to-r from-choco-800 to-choco-900 text-amber-100 p-4 rounded-2xl shadow-lg border border-choco-700 space-y-3">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <div class="text-[10px] uppercase tracking-wider text-amber-200/70 font-bold">Order Availability</div>
@@ -726,11 +705,16 @@
                     </div>
                 </div>
 
-                <div id="orderCutoffNotice" class="rounded-2xl border border-choco-200 bg-choco-50/70 px-3.5 py-3 text-[10px] leading-relaxed text-choco-900">
-                    <div class="flex items-start gap-2.5">
-                        <span class="w-8 h-8 rounded-xl bg-white border border-choco-100 text-choco-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-clock"></i></span>
-                        <div class="min-w-0"><div id="orderCutoffTitle" class="font-extrabold text-xs">Same-day order cutoff</div><div id="orderCutoffMessage" class="mt-0.5 text-slate-600">Same-day orders are accepted until 8:00 PM Malaysia time.</div></div>
+                <!-- Upgrade 1: simple upcoming order calendar -->
+                <div id="orderCalendarCard" class="bg-white border border-choco-200 p-3.5 rounded-2xl card-shadow space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-choco-900 flex items-center gap-1.5"><i class="fa-solid fa-calendar-days text-choco-600"></i> Order Calendar</h3>
+                            <p class="text-[10px] text-slate-500 mt-1">Each day shows how many boxes remain for every scheduled product. Full or closed dates cannot be selected by customers.</p>
+                        </div>
+                        <span class="text-[9px] font-bold text-choco-700 bg-choco-50 border border-choco-100 px-2 py-1 rounded-full shrink-0">7 Days / Week</span>
                     </div>
+                    <div id="orderCalendarGrid" class="grid grid-cols-2 gap-2"></div>
                 </div>
 
                 <!-- Upgrade 2, 3 and 11: Admin capacity controls -->
@@ -770,16 +754,10 @@
                     </div>
 
                     <div class="border border-amber-200 rounded-xl p-3 bg-amber-50/60 space-y-2.5">
-                        <div class="flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-xl bg-white border border-amber-200 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-clock"></i></span>
-                            <div><div class="text-[10px] font-bold uppercase tracking-wider text-amber-900">Same-Day Order Cutoff</div><div class="text-[9px] text-slate-500 mt-0.5">After this time, customers must choose a future date. Malaysia time (MYT).</div></div>
-                        </div>
-                        <div class="grid grid-cols-[1fr_auto] gap-2 items-end">
-                            <div><label for="orderCutoffTime" class="text-[10px] font-semibold text-slate-600">Cutoff time</label><input id="orderCutoffTime" type="time" value="20:00" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none"></div>
-                            <button type="button" onclick="handleSaveOrderCutoff()" class="bg-choco-700 hover:bg-choco-800 text-white font-bold px-4 py-2.5 rounded-xl text-[10px]"><i class="fa-solid fa-floppy-disk mr-1"></i>Save</button>
-                        </div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-amber-900"><i class="fa-solid fa-clock mr-1"></i> Same-Day Order Cutoff</div>
+                        <p class="text-[9px] text-slate-500">After this time, customers must choose a future date. Malaysia time (MYT).</p>
+                        <div class="grid grid-cols-[1fr_auto] gap-2 items-end"><div><label for="orderCutoffTime" class="text-[10px] font-semibold text-slate-600">Cutoff time</label><input id="orderCutoffTime" type="time" value="20:00" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white"></div><button type="button" onclick="handleSaveOrderCutoff()" class="bg-choco-700 text-white font-bold px-4 py-2.5 rounded-xl text-[10px]">Save</button></div>
                     </div>
-
                     <div class="border border-slate-100 rounded-xl p-3 bg-slate-50/50 space-y-2">
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Customer Notice</div>
                         <textarea id="orderNoticeInput" rows="2" maxlength="180" placeholder="e.g. Saturday orders are limited this week." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-white"></textarea>
@@ -787,6 +765,17 @@
                     </div>
                 </div>
 
+                <div id="checkoutPlaceAdminCard" class="hidden bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
+                    <div><h3 class="text-sm font-bold text-choco-900"><i class="fa-solid fa-truck-fast text-emerald-600 mr-1"></i> Delivery Places & COD</h3><p class="text-[10px] text-slate-500 mt-1">Customers choose a place inside the product pop-up. Configure minimum boxes/subtotal and the COD charge for each place.</p></div>
+                    <div class="rounded-xl border border-choco-100 bg-choco-50/60 p-3 space-y-3">
+                        <input type="hidden" id="checkoutPlaceEditId" value="">
+                        <div><label for="checkoutPlaceName" class="text-[10px] font-semibold text-slate-600">Place / Area Name</label><input id="checkoutPlaceName" maxlength="70" placeholder="e.g. Ipoh, Meru, Batu Gajah" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white"></div>
+                        <div class="grid grid-cols-2 gap-2"><div><label for="checkoutMinBoxes" class="text-[10px] font-semibold text-slate-600">Minimum Boxes</label><input id="checkoutMinBoxes" type="number" min="1" value="1" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white"></div><div><label for="checkoutMinAmount" class="text-[10px] font-semibold text-slate-600">Minimum Subtotal (RM)</label><input id="checkoutMinAmount" type="number" min="0" step="0.5" value="0" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white"></div></div>
+                        <div class="grid grid-cols-2 gap-2"><div><label for="checkoutCodType" class="text-[10px] font-semibold text-slate-600">COD Calculation</label><select id="checkoutCodType" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white"><option value="fixed">Flat fee (RM)</option><option value="percent">Percent of subtotal</option></select></div><div><label for="checkoutCodValue" class="text-[10px] font-semibold text-slate-600">Fee / Rate</label><input id="checkoutCodValue" type="number" min="0" step="0.5" value="0" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white"></div></div>
+                        <div class="grid grid-cols-2 gap-2"><button type="button" onclick="handleSaveCheckoutPlace()" id="checkoutPlaceSaveBtn" class="bg-choco-700 text-white font-bold py-2.5 rounded-xl text-xs">Add Place</button><button type="button" onclick="resetCheckoutPlaceForm()" id="checkoutPlaceCancelBtn" class="hidden bg-slate-100 border border-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs">Cancel Edit</button></div>
+                    </div>
+                    <div id="checkoutPlacesAdminList" class="space-y-2"></div>
+                </div>
                 <div id="orderAdminSummary" class="hidden grid grid-cols-2 gap-2.5">
                     <div class="bg-amber-50 border border-amber-200/80 p-3 rounded-2xl card-shadow">
                         <div class="text-[9px] uppercase font-bold tracking-wider text-amber-800">Pending Orders</div>
@@ -804,16 +793,22 @@
                             <h2 id="orderFormTitle" class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
                                 <i class="fa-solid fa-bag-shopping text-choco-600"></i> Place Order
                             </h2>
-                            <p id="orderFormSubtitle" class="text-[10px] text-slate-500 mt-0.5">Choose a cake photo above, select one of its available dates, then enter your quantity and delivery place.</p>
+                            <p id="orderFormSubtitle" class="text-[10px] text-slate-500 mt-0.5">Choose your product, quantity and an available date above. Product availability can change by date.</p>
                         </div>
                         <span id="orderEditBadge" class="hidden text-[9px] uppercase font-bold tracking-wider bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-full">Editing</span>
                     </div>
                     <input type="hidden" id="orderEditId" value="">
+                    <input type="hidden" id="orderNote" value="">
+                    <input type="hidden" id="orderPlace" value="">
                     <div class="space-y-3">
-                        <div class="hidden" aria-hidden="true">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-600">Product</label>
                             <input type="hidden" id="orderProduct" value="">
-                            <div id="orderProductPicker"></div>
-                            <div id="orderProductPickerHint"></div>
+                            <div id="orderProductPicker" class="grid grid-cols-2 gap-2 mt-1">
+                                <div class="order-skeleton h-[74px] rounded-2xl border border-choco-100"></div>
+                                <div class="order-skeleton h-[74px] rounded-2xl border border-choco-100"></div>
+                            </div>
+                            <div id="orderProductPickerHint" class="text-[9px] text-slate-400 mt-1.5">Loading products and availability...</div>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             <div>
@@ -831,14 +826,6 @@
                             </div>
                         </div>
 
-                        <div class="rounded-2xl border border-choco-100 bg-choco-50/60 p-3 space-y-2">
-                            <label for="orderPlace" class="text-[11px] font-semibold text-slate-700"><i class="fa-solid fa-location-dot text-choco-600 mr-1"></i>Delivery / COD Place</label>
-                            <select id="orderPlace" onchange="renderOrderPriceSummary()" class="w-full border border-slate-200 rounded-xl px-3 py-3 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
-                                <option value="">Choose your place</option>
-                            </select>
-                            <div id="orderPlaceDetails" class="text-[10px] leading-relaxed text-slate-500">Choose a place to view the minimum order and COD charge.</div>
-                        </div>
-
                         <div id="orderPriceSummary" class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5">
                             <div class="flex items-end justify-between gap-3">
                                 <div class="min-w-0">
@@ -850,11 +837,6 @@
                                     <div class="text-[9px] uppercase tracking-wider font-bold text-amber-700">Total</div>
                                     <div id="orderTotalPrice" class="text-2xl font-extrabold text-choco-900 mt-0.5 tabular-nums">RM 0.00</div>
                                 </div>
-                            </div>
-                            <div class="mt-3 pt-2.5 border-t border-amber-200/80 space-y-1.5 text-[10px]">
-                                <div class="flex items-center justify-between gap-3"><span class="text-slate-600">Product subtotal</span><span id="orderSubtotalAmount" class="font-bold text-choco-900">RM 0.00</span></div>
-                                <div class="flex items-center justify-between gap-3"><span id="orderCodLabel" class="text-slate-600">COD charge</span><span id="orderCodChargeAmount" class="font-bold text-choco-900">RM 0.00</span></div>
-                                <div id="orderMinimumHint" class="text-[9px] text-slate-500 pt-1">Choose a place to calculate your final total.</div>
                             </div>
                         </div>
                         <div>
@@ -1037,21 +1019,10 @@
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-2.5">
-                            <div>
-                                <label for="productCategory" class="text-[11px] font-semibold text-slate-600">Gallery Category</label>
-                                <select id="productCategory" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
-                                    <option value="Kek Batik">Kek Batik</option><option value="Cheese">Cheese</option><option value="Ganache">Ganache</option><option value="Dessert">Dessert</option><option value="Other">Other</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="productSize" class="text-[11px] font-semibold text-slate-600">Size / Serving</label>
-                                <input id="productSize" maxlength="60" placeholder="e.g. 500g / 6 slices" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
-                            </div>
+                            <div><label for="productCategory" class="text-[10px] font-semibold text-slate-600">Category</label><select id="productCategory" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50"><option>Kek Batik</option><option>Cheese</option><option>Ganache</option><option>Dessert</option><option>Other</option></select></div>
+                            <div><label for="productSize" class="text-[10px] font-semibold text-slate-600">Size / Serving</label><input id="productSize" maxlength="60" placeholder="e.g. 500g / 6 slices" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50"></div>
                         </div>
-                        <div>
-                            <label for="productDescription" class="text-[11px] font-semibold text-slate-600">Customer-facing Description</label>
-                            <textarea id="productDescription" maxlength="280" rows="2" placeholder="Describe the flavour, layers, texture or ingredients…" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50"></textarea>
-                        </div>
+                        <div><label for="productDescription" class="text-[10px] font-semibold text-slate-600">Description</label><textarea id="productDescription" maxlength="280" rows="2" placeholder="Flavour, texture, ingredients…" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs bg-slate-50"></textarea></div>
                         <div>
                             <label class="text-[11px] font-semibold text-slate-600">Icon</label>
                             <select id="productIcon" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-choco-600 focus:outline-none bg-slate-50/50">
@@ -1143,52 +1114,6 @@
                     </div>
                 </div>
 
-                <!-- Delivery places, minimum orders and COD pricing -->
-                <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
-                    <div>
-                        <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2"><i class="fa-solid fa-truck-fast text-emerald-600"></i> Delivery Places & COD Settings</h2>
-                        <p class="text-[10px] text-slate-500 mt-1">Set which places customers can choose, the minimum order, and how COD is calculated for each place.</p>
-                    </div>
-                    <div class="rounded-xl bg-choco-50/70 border border-choco-100 p-3 space-y-3">
-                        <div>
-                            <label for="checkoutPlaceName" class="text-[11px] font-semibold text-slate-600">Place / Area Name</label>
-                            <input id="checkoutPlaceName" type="text" maxlength="70" placeholder="e.g. Ipoh, Meru, Batu Gajah" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div>
-                                <label for="checkoutMinBoxes" class="text-[11px] font-semibold text-slate-600">Minimum Boxes</label>
-                                <input id="checkoutMinBoxes" type="number" min="1" step="1" value="1" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
-                            </div>
-                            <div>
-                                <label for="checkoutMinAmount" class="text-[11px] font-semibold text-slate-600">Minimum Subtotal (RM)</label>
-                                <input id="checkoutMinAmount" type="number" min="0" step="0.50" value="0" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <div>
-                                <label for="checkoutCodType" class="text-[11px] font-semibold text-slate-600">COD Calculation</label>
-                                <select id="checkoutCodType" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
-                                    <option value="fixed">Flat fee (RM)</option>
-                                    <option value="percent">Percentage of subtotal (%)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="checkoutCodValue" class="text-[11px] font-semibold text-slate-600">COD Fee / Rate</label>
-                                <input id="checkoutCodValue" type="number" min="0" step="0.5" value="0" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white focus:ring-2 focus:ring-choco-600 focus:outline-none">
-                            </div>
-                        </div>
-                        <input id="checkoutPlaceEditId" type="hidden" value="">
-                        <div class="grid grid-cols-2 gap-2">
-                            <button id="checkoutPlaceSaveBtn" type="button" onclick="handleSaveCheckoutPlace()" class="bg-choco-700 hover:bg-choco-800 text-white font-bold py-2.5 rounded-xl text-xs"><i class="fa-solid fa-plus mr-1"></i> Add Place</button>
-                            <button id="checkoutPlaceCancelBtn" type="button" onclick="resetCheckoutPlaceForm()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 font-bold py-2.5 rounded-xl text-xs">Cancel Edit</button>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-2">Configured Places</div>
-                        <div id="checkoutPlacesAdminList" class="space-y-2"></div>
-                    </div>
-                </div>
-
                 <!-- QR & Bank Settings -->
                 <div class="bg-white border border-choco-200 p-4 rounded-2xl card-shadow space-y-4">
                     <h2 class="font-serif font-bold text-choco-900 text-base flex items-center gap-2">
@@ -1244,6 +1169,14 @@
                 <div id="navContainer" class="bottom-nav-track"></div>
             </div>
         </nav>
+    </div>
+
+    <!-- Full product detail + checkout modal: customer can finish the entire order here -->
+    <div id="productOrderModal" class="fixed inset-0 z-[80] hidden items-end sm:items-center justify-center bg-slate-950/60 backdrop-blur-sm p-0 sm:p-4" onclick="window.closeProductOrderModal(event)" role="dialog" aria-modal="true" aria-labelledby="productOrderModalTitle">
+        <div class="w-full max-w-lg max-h-[96dvh] overflow-y-auto rounded-t-[28px] sm:rounded-[28px] bg-white border border-choco-100 shadow-2xl" onclick="event.stopPropagation()">
+            <div class="sticky top-0 z-10 flex items-center justify-between bg-white/95 backdrop-blur border-b border-choco-100 px-4 py-3 rounded-t-[28px]"><div><div class="text-[9px] uppercase tracking-[0.17em] font-extrabold text-choco-700">Cake Order</div><div class="text-xs text-slate-500">Review details and place your order here</div></div><button type="button" onclick="window.closeProductOrderModal()" aria-label="Close checkout" class="w-9 h-9 rounded-full bg-slate-100 text-slate-600"><i class="fa-solid fa-xmark"></i></button></div>
+            <div id="productOrderModalContent" class="p-4 sm:p-5"></div>
+        </div>
     </div>
 
     <!-- Customer Order Success -->
@@ -1407,7 +1340,7 @@
             reviews: [],
             products: DEFAULT_PRODUCTS.map(p => ({ ...p })),
             checkoutPlaces: [],
-            galleryImageBase64: null,
+            pendingGalleryImage: null,
             filters: {
                 dashboardProduct: 'all',
                 dashboardMonth: 'all',
@@ -1447,59 +1380,20 @@
         }
 
         function getMalaysiaDateTimeParts(now = new Date()) {
-            const parts = new Intl.DateTimeFormat('en-GB', {
-                timeZone: 'Asia/Kuala_Lumpur', year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-            }).formatToParts(now).reduce((acc, part) => { if (part.type !== 'literal') acc[part.type] = part.value; return acc; }, {});
-            return { date: `${parts.year}-${parts.month}-${parts.day}`, minutes: Number(parts.hour) * 60 + Number(parts.minute), hour: Number(parts.hour), minute: Number(parts.minute) };
+            const parts = new Intl.DateTimeFormat('en-GB', { timeZone:'Asia/Kuala_Lumpur', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hourCycle:'h23' }).formatToParts(now).reduce((o,p) => { if (p.type !== 'literal') o[p.type] = p.value; return o; }, {});
+            return { date:`${parts.year}-${parts.month}-${parts.day}`, minutes:Number(parts.hour)*60+Number(parts.minute) };
         }
-
-        function getConfiguredOrderCutoffTime() {
-            const raw = String(window.appState.settings.orderCutoffTime || '20:00');
-            return /^([01]\d|2[0-3]):[0-5]\d$/.test(raw) ? raw : '20:00';
+        function getOrderCutoffTime() {
+            const t = String(window.appState.settings.orderCutoffTime || '20:00');
+            return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : '20:00';
         }
-
-        function formatCutoffTime(value = getConfiguredOrderCutoffTime()) {
-            const [hour, minute] = value.split(':').map(Number);
-            const suffix = hour >= 12 ? 'PM' : 'AM';
-            const displayHour = hour % 12 || 12;
-            return `${displayHour}:${String(minute).padStart(2, '0')} ${suffix}`;
+        function formatOrderCutoffTime(t = getOrderCutoffTime()) {
+            const [h,m] = t.split(':').map(Number); return `${h%12 || 12}:${String(m).padStart(2,'0')} ${h >= 12 ? 'PM':'AM'}`;
         }
-
-        function isOrderCutoffPassedForDate(dateStr) {
-            if (!dateStr || String(dateStr) !== getMalaysiaDateTimeParts().date) return false;
-            const [hour, minute] = getConfiguredOrderCutoffTime().split(':').map(Number);
-            const current = getMalaysiaDateTimeParts();
-            return current.minutes >= hour * 60 + minute;
-        }
-
-        function getProductCategory(product) {
-            if (String(product?.category || '').trim()) return String(product.category).trim();
-            const name = String(product?.name || '').toLowerCase();
-            if (name.includes('ganache')) return 'Ganache';
-            if (name.includes('cheese') || name.includes('cheesekut')) return 'Cheese';
-            if (name.includes('batik')) return 'Kek Batik';
-            return 'Dessert';
-        }
-
-        function getAvailableProductDates(productId, count = 3) {
-            const dates = [];
-            for (let offset = 0; offset < 90 && dates.length < count; offset++) {
-                const date = dateOffsetStr(offset);
-                if (isOrderCutoffPassedForDate(date) || isOrderDateClosed(date) || !isProductOpenForOrder(productId, date)) continue;
-                const cap = getEffectiveOrderCapacity(date, productId);
-                if (cap.limit <= 0 || cap.remaining > 0) dates.push(date);
-            }
-            return dates;
-        }
-
-        function getNextAvailableProductDate(productId) {
-            return getAvailableProductDates(productId, 1)[0] || '';
-        }
-
-        function formatProductDateLabel(dateStr) {
-            const date = new Date(`${dateStr}T12:00:00`);
-            return date.toLocaleDateString('en-MY', { weekday: 'short', day: 'numeric', month: 'short' });
+        function isOrderCutoffPassedForDate(date) {
+            if (date !== getMalaysiaDateTimeParts().date) return false;
+            const [h,m] = getOrderCutoffTime().split(':').map(Number);
+            return getMalaysiaDateTimeParts().minutes >= h*60+m;
         }
 
         function escapeHtml(value) {
@@ -1527,6 +1421,27 @@
             return getProduct(id)?.icon || 'fa-cookie-bite';
         }
 
+        function getProductCategory(product) {
+            if (product?.category) return String(product.category);
+            const name = String(product?.name || '').toLowerCase();
+            if (name.includes('ganache')) return 'Ganache';
+            if (name.includes('cheese') || name.includes('cheesekut')) return 'Cheese';
+            if (name.includes('batik')) return 'Kek Batik';
+            return 'Dessert';
+        }
+        function getSelectedCheckoutPlace() {
+            const modal = document.getElementById('productOrderModal');
+            const popupSelect = document.getElementById('popupOrderPlace');
+            const id = modal && !modal.classList.contains('hidden') && popupSelect
+                ? popupSelect.value
+                : (document.getElementById('orderPlace')?.value || '');
+            return window.appState.checkoutPlaces.find(p => p.id === id) || null;
+        }
+        function getCodCharge(subtotal, place = getSelectedCheckoutPlace()) {
+            if (!place) return 0;
+            const fee = Math.max(0, Number(place.codValue || 0));
+            return Math.round(((place.codType === 'percent' ? subtotal * fee / 100 : fee) + Number.EPSILON) * 100) / 100;
+        }
         function normalizeProductAvailabilityConfig(config) {
             const raw = config && typeof config === 'object' ? config : {};
             const dates = raw.dates && typeof raw.dates === 'object' ? raw.dates : {};
@@ -1542,7 +1457,7 @@
             return { mode: window.appState.settings.orderProductOpen?.[id] === false ? 'closed' : 'always', dates: {} };
         }
 
-        function isProductOpenForOrder(id, date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date) {
+        function isProductOpenForOrder(id, date = document.getElementById('orderDate')?.value || localDateStr()) {
             const product = getProduct(id);
             if (!product || product.active === false) return false;
             const cfg = getProductAvailabilityConfig(id);
@@ -1551,7 +1466,7 @@
             return true;
         }
 
-        function getOrderableProducts(date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date) {
+        function getOrderableProducts(date = document.getElementById('orderDate')?.value || localDateStr()) {
             return window.appState.products.filter(p => p.active !== false && isProductOpenForOrder(p.id, date));
         }
 
@@ -1602,12 +1517,14 @@
             if (!hidden || !picker) return;
 
             const current = hidden.value;
-            const orderDate = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
-            const cutoffPassed = !window.appState.isAdmin && isOrderCutoffPassedForDate(orderDate);
+            const orderDate = document.getElementById('orderDate')?.value || localDateStr();
             let products = window.appState.products.filter(p => p.active !== false);
 
-            // Keep every active product in the hidden selector so the chosen product stays selected
-            // while customers browse dates when that product is not scheduled or is sold out.
+            // Customer view keeps sold-out products visible so availability is obvious.
+            // Products that are not scheduled/open for the chosen date stay hidden.
+            if (!window.appState.isAdmin) {
+                products = products.filter(p => isProductOpenForOrder(p.id, orderDate));
+            }
 
             if (!products.length) {
                 hidden.value = '';
@@ -1620,10 +1537,11 @@
 
             const selectableProducts = products.filter(p => {
                 const cap = getEffectiveOrderCapacity(orderDate, p.id);
-                return isProductOpenForOrder(p.id, orderDate) && (window.appState.isAdmin || (!cutoffPassed && (cap.limit <= 0 || cap.remaining > 0)));
+                return window.appState.isAdmin || cap.limit <= 0 || cap.remaining > 0;
             });
-            const currentStillActive = products.some(p => p.id === current);
-            const selectedId = currentStillActive ? current : (window.appState.isAdmin ? (selectableProducts[0]?.id || '') : '');
+            const selectedId = selectableProducts.some(p => p.id === current)
+                ? current
+                : (selectableProducts[0]?.id || '');
             hidden.value = selectedId;
 
             picker.innerHTML = products.map(p => {
@@ -1632,10 +1550,10 @@
                 const isSelected = p.id === selectedId;
                 const soldOut = cap.limit > 0 && cap.remaining <= 0;
                 const remaining = cap.limit > 0 ? `${cap.remaining} left` : 'Unlimited';
-                const disabled = !open || soldOut || cutoffPassed;
+                const disabled = !open || soldOut;
                 const productIcon = escapeHtml(p.icon || 'fa-cookie-bite');
-                const statusText = cutoffPassed ? 'Cutoff passed' : (!open ? 'Closed' : (soldOut ? 'Sold Out' : remaining));
-                const statusClass = cutoffPassed || !open || soldOut ? 'text-rose-500' : (cap.limit > 0 && cap.remaining <= Math.max(2, Math.ceil(cap.limit * 0.2)) ? 'text-amber-600' : 'text-emerald-600');
+                const statusText = !open ? 'Closed' : (soldOut ? 'Sold Out' : remaining);
+                const statusClass = !open || soldOut ? 'text-rose-500' : (cap.limit > 0 && cap.remaining <= Math.max(2, Math.ceil(cap.limit * 0.2)) ? 'text-amber-600' : 'text-emerald-600');
                 const unitPrice = Number(p.defaultPrice || 0);
                 const rawImage = String(p.imageUrl || p.image || p.photo || '').trim();
                 const visual = rawImage
@@ -1656,24 +1574,11 @@
             }).join('');
 
             if (hint) {
-                if (cutoffPassed) hint.innerText = `Today's ${formatCutoffTime()} Malaysia-time cutoff has passed. Select a future date.`;
-                else if (!selectableProducts.length && !window.appState.isAdmin) hint.innerText = `All products are sold out for ${orderDate}.`;
+                if (!selectableProducts.length && !window.appState.isAdmin) hint.innerText = `All products are sold out for ${orderDate}.`;
                 else hint.innerText = `${selectableProducts.length} product${selectableProducts.length === 1 ? '' : 's'} available for ${orderDate}. Tap a product to choose.`;
             }
             syncOrderQuantityControls(true);
             renderOrderPriceSummary();
-        }
-
-        function getSelectedCheckoutPlace() {
-            const placeId = document.getElementById('orderPlace')?.value || '';
-            return window.appState.checkoutPlaces.find(place => place.id === placeId) || null;
-        }
-
-        function calculateCodCharge(subtotal, place) {
-            if (!place) return 0;
-            const value = Math.max(0, Number(place.codValue || 0));
-            const fee = place.codType === 'percent' ? subtotal * value / 100 : value;
-            return Math.round((Math.max(0, fee) + Number.EPSILON) * 100) / 100;
         }
 
         function getOrderPricing() {
@@ -1685,7 +1590,7 @@
             const unitPrice = Number(existing?.unitPrice ?? product?.defaultPrice ?? 0);
             const subtotal = unitPrice * qty;
             const place = getSelectedCheckoutPlace();
-            const codCharge = calculateCodCharge(subtotal, place);
+            const codCharge = getCodCharge(subtotal, place);
             return { productId, product, qty, unitPrice, subtotal, place, codCharge, total: subtotal + codCharge };
         }
 
@@ -1697,55 +1602,26 @@
         }
 
         function renderOrderPriceSummary() {
-            const { product, qty, unitPrice, subtotal, place, codCharge, total } = getOrderPricing();
+            const { product, qty, unitPrice, total } = getOrderPricing();
             const unitEl = document.getElementById('orderUnitPrice');
             const totalEl = document.getElementById('orderTotalPrice');
             const calcEl = document.getElementById('orderCalcLine');
             const stickyTotal = document.getElementById('orderStickyTotal');
             const stickyDetail = document.getElementById('orderStickyDetail');
-            const subtotalEl = document.getElementById('orderSubtotalAmount');
-            const codEl = document.getElementById('orderCodChargeAmount');
-            const codLabel = document.getElementById('orderCodLabel');
-            const placeDetails = document.getElementById('orderPlaceDetails');
-            const minHint = document.getElementById('orderMinimumHint');
             const qtyWord = qty === 1 ? 'box' : 'boxes';
             if (unitEl) unitEl.innerText = `RM ${unitPrice.toFixed(2)} / box`;
-            if (calcEl) calcEl.innerText = `${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)} = RM ${subtotal.toFixed(2)}`;
-            if (subtotalEl) subtotalEl.innerText = `RM ${subtotal.toFixed(2)}`;
-            if (codEl) codEl.innerText = `RM ${codCharge.toFixed(2)}`;
-            if (codLabel) codLabel.innerText = place ? `COD charge · ${place.name}` : 'COD charge';
+            if (calcEl) calcEl.innerText = `${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)}`;
             if (totalEl) {
                 const next = `RM ${total.toFixed(2)}`;
                 if (totalEl.innerText !== next) animateOrderTotal(totalEl);
                 totalEl.innerText = next;
             }
             if (stickyTotal) stickyTotal.innerText = `RM ${total.toFixed(2)}`;
-            if (stickyDetail) stickyDetail.innerText = product ? `${product.name} · ${qty} ${qtyWord} + COD` : 'Choose product and quantity';
-            if (placeDetails) {
-                if (!place) placeDetails.innerText = window.appState.checkoutPlaces.length
-                    ? 'Please choose a delivery / COD place to calculate the charge.'
-                    : 'Delivery places are not configured yet. Please check back later.';
-                else {
-                    const feeLabel = place.codType === 'percent' ? `${Number(place.codValue || 0)}% of subtotal` : `RM ${Number(place.codValue || 0).toFixed(2)} flat fee`;
-                    placeDetails.innerText = `Minimum: ${Math.max(1, Number(place.minBoxes || 1))} box(es)${Number(place.minAmount || 0) > 0 ? ` and RM ${Number(place.minAmount).toFixed(2)} subtotal` : ''} · COD: ${feeLabel}`;
-                }
-            }
-            if (minHint) {
-                if (!place) minHint.innerText = 'Choose a place to calculate the COD charge and final total.';
-                else {
-                    const minBoxes = Math.max(1, Number(place.minBoxes || 1));
-                    const minAmount = Math.max(0, Number(place.minAmount || 0));
-                    const remainingBoxes = Math.max(0, minBoxes - qty);
-                    const remainingAmount = Math.max(0, minAmount - subtotal);
-                    const valid = remainingBoxes === 0 && remainingAmount <= 0;
-                    minHint.className = `text-[9px] pt-1 ${valid ? 'text-emerald-700' : 'text-rose-600'}`;
-                    minHint.innerText = valid ? `Minimum order met for ${place.name}. Total includes COD.` : `Minimum order for ${place.name}: ${minBoxes} box(es)${minAmount > 0 ? ` and RM ${minAmount.toFixed(2)} subtotal` : ''}.`;
-                }
-            }
+            if (stickyDetail) stickyDetail.innerText = product ? `${product.name} · ${qty} ${qtyWord} × RM ${unitPrice.toFixed(2)}` : 'Choose product and quantity';
         }
 
         function getOrderQuantityLimit() {
-            const date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
+            const date = document.getElementById('orderDate')?.value || localDateStr();
             const productId = document.getElementById('orderProduct')?.value || '';
             const editId = document.getElementById('orderEditId')?.value || '';
             if (!productId) return { max: 0, cap: null };
@@ -2039,7 +1915,7 @@
 
         window.selectOrderProduct = function(productId) {
             const hidden = document.getElementById('orderProduct');
-            const date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
+            const date = document.getElementById('orderDate')?.value || localDateStr();
             if (!hidden) return;
             const isAdmin = window.appState.isAdmin;
             if (!isAdmin && !isProductOpenForOrder(productId, date)) {
@@ -2053,9 +1929,7 @@
             syncOrderQuantityControls(true);
             renderOrderProductSelector();
             syncOrderQuantityControls(true);
-            renderGallery();
             renderOrderCapacity();
-            renderOrderCalendar();
             renderOrderPriceSummary();
         };
 
@@ -2095,7 +1969,7 @@
                         </div>
                         <button onclick="saveProductDailyLimit('${escapeHtml(p.id)}')" class="bg-choco-700 hover:bg-choco-800 text-white font-bold px-3 py-2 rounded-lg text-[9px]"><i class="fa-solid fa-floppy-disk mr-1"></i>Save</button>
                     </div>
-                    ${cfg.mode === 'dates' ? `<div class="flex items-end gap-2 bg-slate-50 rounded-lg p-2"><div class="flex-1"><label class="text-[9px] font-semibold text-slate-500">Add order date</label><input type="date" id="productScheduleDate-${escapeHtml(p.id)}" value="${escapeHtml(selectedDates[0] || document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date)}" class="w-full mt-1 border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] focus:ring-2 focus:ring-choco-600 focus:outline-none bg-white"></div><button onclick="addProductAvailabilityDate('${escapeHtml(p.id)}')" class="bg-choco-700 text-white font-bold px-3 py-2 rounded-lg text-[9px]"><i class="fa-solid fa-plus mr-1"></i>Add</button></div>
+                    ${cfg.mode === 'dates' ? `<div class="flex items-end gap-2 bg-slate-50 rounded-lg p-2"><div class="flex-1"><label class="text-[9px] font-semibold text-slate-500">Add order date</label><input type="date" id="productScheduleDate-${escapeHtml(p.id)}" value="${escapeHtml(selectedDates[0] || document.getElementById('orderDate')?.value || localDateStr())}" class="w-full mt-1 border border-slate-200 rounded-lg px-2 py-1.5 text-[10px] focus:ring-2 focus:ring-choco-600 focus:outline-none bg-white"></div><button onclick="addProductAvailabilityDate('${escapeHtml(p.id)}')" class="bg-choco-700 text-white font-bold px-3 py-2 rounded-lg text-[9px]"><i class="fa-solid fa-plus mr-1"></i>Add</button></div>
                     <div class="flex flex-wrap gap-1.5">${selectedDates.length ? selectedDates.map(d => `<span class="inline-flex items-center gap-1 bg-white border border-slate-200 rounded-full px-2 py-1 text-[8px] font-bold text-slate-600">${escapeHtml(new Date(`${d}T00:00:00`).toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short' }))}<button onclick="removeProductAvailabilityDate('${escapeHtml(p.id)}','${d}')" class="text-rose-500 hover:text-rose-700" title="Remove date"><i class="fa-solid fa-xmark"></i></button></span>`).join('') : '<span class="text-[8px] text-slate-400 italic">Add one or more dates. Customers will only see these dates.</span>'}</div>` : ''}
                 </div>`;
             }).join('');
@@ -2124,6 +1998,8 @@
             syncIngredientProductOptions(document.getElementById('ingEditId')?.value ? document.getElementById('ingProductId')?.value : (window.appState.filters.ingredientProduct !== 'all' ? window.appState.filters.ingredientProduct : ''));
             setSelectOptions('salesProductFilter', window.appState.filters.salesProduct, true);
             renderOrderProductSelector();
+            renderGallery();
+            renderCheckoutPlacesAdminList();
             renderOrderProductAvailabilityAdmin();
             setSelectOptions('reviewProductSelect', window.appState.products[0]?.id || 'kek-batik', false);
             setSelectOptions('reviewProductFilter', window.appState.filters.reviewProduct, true);
@@ -2187,14 +2063,6 @@
             // Customer mode opens directly on the Order page. Admin login still redirects to Dashboard.
             window.appState.activeTab = window.appState.isAdmin ? (pendingAdminTab === 'orders' ? 'orders' : 'dashboard') : 'orders';
             renderAllViews();
-            renderOrderCutoffNotice();
-            if (!window.orderCutoffRefreshInterval) window.orderCutoffRefreshInterval = setInterval(() => {
-                renderOrderCutoffNotice();
-                renderOrderProductSelector();
-                renderOrderCapacity();
-                renderOrderCalendar();
-                renderGallery();
-            }, 60000);
             // Apply the active tab visibility on first load so the default Customer page is truly Order.
             switchTab(window.appState.activeTab);
             restorePendingOrderReceipt();
@@ -2225,11 +2093,14 @@
                 renderProductSelectors();
                 renderProducts();
                 renderGallery();
+                renderCheckoutPlacesAdminList();
                 renderMonthFilter();
                 renderIngredients();
                 renderSales();
                 renderOrders();
                 renderReviews();
+                renderGallery();
+                renderProductOrderModalIfOpen();
                 updateCalculationsAndDashboard();
             });
 
@@ -2276,16 +2147,6 @@
                     });
             });
 
-            onValue(getDbRef('settings/checkout_config/places'), (snapshot) => {
-                const data = snapshot.val() || {};
-                window.appState.checkoutPlaces = Object.keys(data).map(key => ({ id: key, ...data[key] }))
-                    .filter(place => place.active !== false)
-                    .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
-                renderCheckoutPlaceSelector();
-                renderCheckoutPlaceAdminList();
-                renderOrderPriceSummary();
-            });
-
             onValue(getDbRef('settings/order_config'), (snapshot) => {
                 const data = snapshot.val() || {};
                 window.appState.settings.dailyOrderLimit = Math.max(0, Number(data.dailyLimit || 0));
@@ -2296,8 +2157,7 @@
                 window.appState.settings.productDailyLimits = data.productDailyLimits && typeof data.productDailyLimits === 'object' ? data.productDailyLimits : {};
                 window.appState.settings.orderNotice = String(data.customerNotice || '');
                 window.appState.settings.orderCutoffTime = String(data.cutoffTime || '20:00');
-                const cutoffInput = document.getElementById('orderCutoffTime');
-                if (cutoffInput && document.activeElement !== cutoffInput) cutoffInput.value = getConfiguredOrderCutoffTime();
+                const cutoffInput = document.getElementById('orderCutoffTime'); if (cutoffInput && document.activeElement !== cutoffInput) cutoffInput.value = getOrderCutoffTime();
                 const noticeInput = document.getElementById('orderNoticeInput');
                 if (noticeInput && document.activeElement !== noticeInput) noticeInput.value = window.appState.settings.orderNotice;
                     renderOrderProductSelector();
@@ -2305,17 +2165,26 @@
                 updateDateLimitAdminUi();
                 renderOrderProductAvailabilityAdmin();
                 renderOrderNotice();
-                renderOrderCutoffNotice();
+                renderGallery();
+                renderCheckoutPlacesAdminList();
+                renderOrderNotice();
                 renderOrders();
                 renderOrderCapacity();
                 renderOrderCalendar();
+            });
+
+            onValue(getDbRef('settings/checkout_config/places'), (snapshot) => {
+                const data = snapshot.val() || {};
+                window.appState.checkoutPlaces = Object.keys(data).map(id => ({ id, ...data[id] })).filter(p => p.active !== false).sort((a,b) => String(a.name||'').localeCompare(String(b.name||'')));
+                renderCheckoutPlacesAdminList();
+                renderGallery();
+                renderProductOrderModalIfOpen();
             });
 
             onValue(getDbRef('reviews'), (snapshot) => {
                 const data = snapshot.val();
                 window.appState.reviews = data ? Object.keys(data).map(key => ({ id: key, ...data[key], productId: data[key].productId || 'kek-batik' })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)) : [];
                 renderReviews();
-                renderGallery();
             });
 
             onValue(getDbRef('settings/qr_config'), (snapshot) => {
@@ -2351,8 +2220,12 @@
             renderNavigation();
             if (tabName === 'dashboard') setTimeout(renderProfitChart, 80);
             if (tabName === 'sales') { renderSalesMonthFilter(); renderSales(); }
-            if (tabName === 'orders') { renderOrders(); renderOrderCutoffNotice(); }
-            if (tabName === 'orders') renderGallery();
+            if (tabName === 'orders') {
+                renderOrders();
+                updateOrderModeUi();
+                renderGallery();
+                renderCheckoutPlacesAdminList();
+            }
         };
 
         window.toggleAdminSidebar = function() {
@@ -2484,9 +2357,6 @@
             }
             renderNavigation();
             renderReviews();
-            renderGallery();
-            renderCheckoutPlaceSelector();
-            renderCheckoutPlaceAdminList();
             resetOrderForm();
             renderOrders();
         }
@@ -3234,142 +3104,94 @@
         }
 
         function isWorkingOrderDate(dateStr) {
-            // Orders are available on all seven days; this helper now only validates the date.
-            const d = new Date(`${dateStr}T12:00:00`);
-            return !Number.isNaN(d.getTime());
+            return !Number.isNaN(new Date(`${dateStr}T12:00:00`).getTime());
         }
 
         function getNextWorkingOrderDates(count = 7) {
             const dates = [];
-            for (let offset = 0; offset < 90 && dates.length < count; offset++) {
-                dates.push(dateOffsetStr(offset));
-            }
+            for (let offset = 0; offset < 90 && dates.length < count; offset++) dates.push(dateOffsetStr(offset));
             return dates;
         }
 
         function findNextAvailableOrderDate() {
-            for (let i = 0; i < 90; i++) {
+            for (let i = 0; i < 60; i++) {
                 const date = dateOffsetStr(i);
+                if (!isWorkingOrderDate(date) || isOrderCutoffPassedForDate(date)) continue;
                 const cap = getOrderCapacity(date);
-                if (!cap.closed && !isOrderCutoffPassedForDate(date) && (cap.limit <= 0 || cap.booked < cap.limit) && getOrderableProducts(date).length) return date;
+                if (!cap.closed && (cap.limit <= 0 || cap.booked < cap.limit) && getOrderableProducts(date).length) return date;
             }
             return getNextWorkingOrderDates(1)[0] || localDateStr();
         }
 
         window.selectOrderCalendarDate = function(date) {
-            const editId = document.getElementById('orderEditId')?.value || '';
-            const productId = document.getElementById('orderProduct')?.value || '';
-            const cap = productId ? getEffectiveOrderCapacity(date, productId, editId) : getOrderCapacity(date, editId);
-            const productOpen = productId ? isProductOpenForOrder(productId, date) : getCalendarProductsForDate(date).length > 0;
-            if (!window.appState.isAdmin && (!isWorkingOrderDate(date) || isOrderCutoffPassedForDate(date) || isOrderDateClosed(date) || !productOpen || cap.full)) return;
+            const cap = getOrderCapacity(date, document.getElementById('orderEditId')?.value || '');
+            if (!window.appState.isAdmin && (!isWorkingOrderDate(date) || cap.closed || cap.full)) return;
             const input = document.getElementById('orderDate');
             if (input) input.value = date;
             renderOrderProductSelector();
             if (window.appState.isAdmin) {
                 const adminDate = document.getElementById('dateLimitDate');
                 if (adminDate) adminDate.value = date;
-            }
+                }
             renderOrderCapacity();
             renderOrderCalendar();
-            renderOrderPriceSummary();
         };
 
         window.renderOrderCalendar = function() {
             const grid = document.getElementById('orderCalendarGrid');
             if (!grid) return;
             const selected = document.getElementById('orderDate')?.value || '';
-            const selectedProductId = document.getElementById('orderProduct')?.value || '';
-            const selectedProduct = selectedProductId ? getProduct(selectedProductId) : null;
             const isAdmin = window.appState.isAdmin;
-            const title = document.getElementById('orderCalendarTitle');
-            const hint = document.getElementById('orderCalendarHint');
-            const firstWindow = getNextWorkingOrderDates(7);
-            const nextProductDate = selectedProduct ? getNextAvailableProductDate(selectedProduct.id) : '';
-            const firstProductDateOutsideWindow = Boolean(nextProductDate && !firstWindow.includes(nextProductDate));
-            let calendarDates = firstWindow;
-            if (firstProductDateOutsideWindow) {
-                const today = new Date(`${getMalaysiaDateTimeParts().date}T12:00:00`);
-                const nextDate = new Date(`${nextProductDate}T12:00:00`);
-                const offset = Math.max(0, Math.round((nextDate - today) / 86400000));
-                calendarDates = Array.from({ length: 7 }, (_, index) => dateOffsetStr(offset + index));
-            }
-            if (title) title.innerHTML = `<i class="fa-solid fa-calendar-days text-choco-600"></i> ${selectedProduct ? `Dates for ${escapeHtml(selectedProduct.name)}` : 'Available Order Dates'}`;
-            if (hint) hint.innerText = selectedProduct
-                ? (firstProductDateOutsideWindow
-                    ? `Showing the next seven days from ${formatProductDateLabel(nextProductDate)} because this cake's next availability is further ahead. Remaining boxes are shown for each date.`
-                    : `Only dates when ${selectedProduct.name} can be ordered are enabled. Remaining boxes are shown for each date.`)
-                : 'Select a cake above to see exactly which dates are available for that product. Orders are accepted seven days a week.';
-
             const cards = [];
-            for (const date of calendarDates) {
+
+            for (const date of getNextWorkingOrderDates(7)) {
                 const label = formatOrderCalendarDate(date);
                 const dateClosed = isOrderDateClosed(date);
-                const cutoffPassed = !isAdmin && isOrderCutoffPassedForDate(date);
-                const products = selectedProduct
-                    ? [selectedProduct]
-                    : getCalendarProductsForDate(date);
+                const products = getCalendarProductsForDate(date);
                 const statuses = products.map(product => ({
                     product,
-                    status: getCalendarProductStatus(date, product.id),
-                    scheduledOpen: isProductOpenForOrder(product.id, date)
+                    status: getCalendarProductStatus(date, product.id)
                 }));
-                const availableStatuses = statuses.filter(({ status, scheduledOpen }) => scheduledOpen && (status.cap.limit <= 0 || status.cap.remaining > 0));
-                const noProduct = !selectedProduct && products.length === 0;
-                const selectedNotScheduled = Boolean(selectedProduct && !isProductOpenForOrder(selectedProduct.id, date));
-                const selectedSoldOut = Boolean(selectedProduct && isProductOpenForOrder(selectedProduct.id, date) && statuses[0] && statuses[0].status.cap.limit > 0 && statuses[0].status.cap.remaining <= 0);
-                const noCapacity = selectedProduct ? selectedSoldOut : (products.length > 0 && availableStatuses.length === 0);
-                const blockedForCustomer = !isAdmin && (cutoffPassed || dateClosed || noProduct || selectedNotScheduled || noCapacity);
+                const availableStatuses = statuses.filter(({ status }) => status.cap.limit <= 0 || status.cap.remaining > 0);
+                const noProduct = products.length === 0;
+                const noCapacity = products.length > 0 && availableStatuses.length === 0;
+                const blockedForCustomer = !isAdmin && (dateClosed || noProduct || noCapacity);
 
                 let statusText = 'OPEN';
                 let statusClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
                 if (dateClosed) {
                     statusText = 'CLOSED';
                     statusClass = 'bg-slate-100 text-slate-600 border-slate-200';
-                } else if (cutoffPassed) {
-                    statusText = 'CUT-OFF';
-                    statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
-                } else if (selectedNotScheduled) {
-                    statusText = 'NOT SCHEDULED';
-                    statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
                 } else if (noProduct) {
                     statusText = 'NO PRODUCTS';
                     statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
                 } else if (noCapacity) {
-                    statusText = 'SOLD OUT';
+                    statusText = 'FULL';
                     statusClass = 'bg-rose-50 text-rose-700 border-rose-200';
                 } else if (availableStatuses.some(({ status }) => status.cap.limit > 0 && status.cap.remaining <= Math.max(2, Math.ceil(status.cap.limit * 0.2)))) {
                     statusText = 'LIMITED';
                     statusClass = 'bg-amber-50 text-amber-700 border-amber-200';
                 }
 
-                let productRows = '';
-                if (dateClosed) {
-                    productRows = `<div class="mt-2 text-[9px] font-semibold text-slate-400">Orders are closed for this date.</div>`;
-                } else if (cutoffPassed) {
-                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-600">Today’s ${escapeHtml(formatCutoffTime())} cutoff has passed. Choose a future date.</div>`;
-                } else if (selectedNotScheduled) {
-                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-600">${escapeHtml(selectedProduct.name)} is not scheduled for this date.</div>`;
-                } else if (noProduct) {
-                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-500">No products scheduled.</div>`;
-                } else if (selectedSoldOut) {
-                    productRows = `<div class="mt-2 text-[9px] font-semibold text-rose-600">${escapeHtml(selectedProduct.name)} is fully booked for this date.</div>`;
-                } else {
-                    productRows = `<div class="mt-2 space-y-1.5 max-h-28 overflow-y-auto pr-0.5">${statuses.filter(({ scheduledOpen }) => selectedProduct || scheduledOpen).map(({ product, status }) => {
-                        const isFull = status.cap.limit > 0 && status.cap.remaining <= 0;
-                        const textClass = isFull ? 'text-rose-600' : status.cap.limit > 0 && status.cap.remaining <= Math.max(2, Math.ceil(status.cap.limit * 0.2)) ? 'text-amber-700' : 'text-emerald-700';
-                        return `
-                            <div class="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/70 px-2 py-1.5">
-                                <div class="min-w-0 flex items-center gap-1.5">
-                                    <span class="w-5 h-5 rounded-md bg-white border border-slate-100 flex items-center justify-center text-choco-600 shrink-0"><i class="fa-solid ${escapeHtml(getProductIcon(product.id))} text-[8px]"></i></span>
-                                    <div class="min-w-0">
-                                        <div class="text-[9px] font-bold text-choco-900 truncate">${escapeHtml(product.name)}</div>
-                                        <div class="text-[8px] text-slate-400">${escapeHtml(status.detail)}</div>
+                const productRows = dateClosed
+                    ? `<div class="mt-2 text-[9px] font-semibold text-slate-400">Orders are closed for this date.</div>`
+                    : noProduct
+                        ? `<div class="mt-2 text-[9px] font-semibold text-rose-500">No products scheduled.</div>`
+                        : `<div class="mt-2 space-y-1.5 max-h-28 overflow-y-auto pr-0.5">${statuses.map(({ product, status }) => {
+                            const isFull = status.cap.limit > 0 && status.cap.remaining <= 0;
+                            const textClass = isFull ? 'text-rose-600' : status.cap.limit > 0 && status.cap.remaining <= Math.max(2, Math.ceil(status.cap.limit * 0.2)) ? 'text-amber-700' : 'text-emerald-700';
+                            return `
+                                <div class="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50/70 px-2 py-1.5">
+                                    <div class="min-w-0 flex items-center gap-1.5">
+                                        <span class="w-5 h-5 rounded-md bg-white border border-slate-100 flex items-center justify-center text-choco-600 shrink-0"><i class="fa-solid ${escapeHtml(getProductIcon(product.id))} text-[8px]"></i></span>
+                                        <div class="min-w-0">
+                                            <div class="text-[9px] font-bold text-choco-900 truncate">${escapeHtml(product.name)}</div>
+                                            <div class="text-[8px] text-slate-400">${escapeHtml(status.detail)}</div>
+                                        </div>
                                     </div>
-                                </div>
-                                <span class="text-[8px] font-extrabold ${textClass} shrink-0">${escapeHtml(status.text)}</span>
-                            </div>`;
-                    }).join('')}</div>`;
-                }
+                                    <span class="text-[8px] font-extrabold ${textClass} shrink-0">${escapeHtml(status.text)}</span>
+                                </div>`;
+                        }).join('')}</div>`;
 
                 cards.push(`
                     <button type="button" onclick="selectOrderCalendarDate('${date}')" ${blockedForCustomer ? 'disabled' : ''}
@@ -3387,44 +3209,6 @@
             grid.innerHTML = cards.join('');
         };
 
-        function renderOrderCutoffNotice() {
-            const card = document.getElementById('orderCutoffNotice');
-            const title = document.getElementById('orderCutoffTitle');
-            const message = document.getElementById('orderCutoffMessage');
-            if (!card || !title || !message) return;
-            const isAdmin = window.appState.isAdmin;
-            const cutoff = getConfiguredOrderCutoffTime();
-            const passed = isOrderCutoffPassedForDate(getMalaysiaDateTimeParts().date);
-            if (passed) {
-                card.className = `rounded-2xl border border-rose-200 bg-rose-50 px-3.5 py-3 text-[10px] leading-relaxed text-rose-900${isAdmin ? ' hidden' : ''}`;
-                title.innerText = 'Today’s order cutoff has passed';
-                message.innerText = `Same-day ordering closed at ${formatCutoffTime(cutoff)} Malaysia time. You can still order for a future date.`;
-            } else {
-                card.className = `rounded-2xl border border-choco-200 bg-choco-50/70 px-3.5 py-3 text-[10px] leading-relaxed text-choco-900${isAdmin ? ' hidden' : ''}`;
-                title.innerText = 'Same-day order cutoff';
-                message.innerText = `Place same-day orders before ${formatCutoffTime(cutoff)} Malaysia time. Future-date ordering remains available after the cutoff.`;
-            }
-        }
-
-        window.handleSaveOrderCutoff = async function() {
-            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
-            const input = document.getElementById('orderCutoffTime');
-            const cutoffTime = String(input?.value || '').trim();
-            if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(cutoffTime)) return showToast('Please choose a valid cutoff time.', 'error');
-            try {
-                await set(getDbRef('settings/order_config/cutoffTime'), cutoffTime);
-                window.appState.settings.orderCutoffTime = cutoffTime;
-                renderOrderCutoffNotice();
-                renderOrderProductSelector();
-                renderOrderCapacity();
-                renderOrderCalendar();
-                showToast(`Same-day order cutoff saved: ${formatCutoffTime(cutoffTime)} Malaysia time.`, 'success');
-            } catch (err) {
-                console.error('Failed to save order cutoff:', err);
-                showToast('Could not save cutoff time. Please try again.', 'error');
-            }
-        };
-
         function renderOrderNotice() {
             const card = document.getElementById('orderCustomerNoticeCard');
             const textEl = document.getElementById('orderCustomerNoticeText');
@@ -3435,7 +3219,7 @@
         }
 
         window.renderOrderCapacity = function() {
-            const date = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
+            const date = document.getElementById('orderDate')?.value || localDateStr();
             const editId = document.getElementById('orderEditId')?.value || '';
             const qty = Math.max(1, parseInt(document.getElementById('orderQty')?.value || '1') || 1);
             const selectedProductId = document.getElementById('orderProduct')?.value || '';
@@ -3449,19 +3233,11 @@
             const saveBtn = document.getElementById('orderSaveBtn');
 
             if (!isAdmin && !isWorkingOrderDate(date)) {
-                if (textEl) textEl.innerText = 'Invalid date';
-                if (hintEl) hintEl.innerText = 'Please choose a valid order date.';
+                if (textEl) textEl.innerText = 'Working days only';
+                if (hintEl) hintEl.innerText = 'Same-day orders are accepted until the configured cutoff time; future dates are available every day.';
                 if (badgeEl) {
                     badgeEl.innerText = 'Unavailable';
                     badgeEl.className = 'bg-slate-500/30 border border-white/20 text-white px-2.5 py-1 rounded-full text-[10px] font-bold';
-                }
-                if (barEl) barEl.style.width = '100%';
-            } else if (!isAdmin && isOrderCutoffPassedForDate(date)) {
-                if (textEl) textEl.innerText = 'Same-day cutoff passed';
-                if (hintEl) hintEl.innerText = `Today’s order cutoff was ${formatCutoffTime()} Malaysia time. Please choose a future date.`;
-                if (badgeEl) {
-                    badgeEl.innerText = 'Cut-off';
-                    badgeEl.className = 'bg-rose-500/20 border border-rose-300/30 text-rose-100 px-2.5 py-1 rounded-full text-[10px] font-bold';
                 }
                 if (barEl) barEl.style.width = '100%';
             } else if (cap.closed) {
@@ -3498,9 +3274,8 @@
             const blockedByNoProduct = !isAdmin && (!selectedProductId || !isProductOpenForOrder(selectedProductId, date));
             const blockedByNonWorkingDay = !isAdmin && !isWorkingOrderDate(date);
             const blockedByClosedDate = !isAdmin && cap.closed;
-            const blockedByCutoff = !isAdmin && isOrderCutoffPassedForDate(date);
             const blockedByLimit = cap.limit > 0 && qty > cap.availableForForm;
-            if (blockedByNoProduct && !blockedByCutoff) {
+            if (blockedByNoProduct) {
                 if (textEl) textEl.innerText = 'No product open';
                 if (hintEl) hintEl.innerText = 'Please wait until Admin opens a product for ordering.';
                 if (badgeEl) {
@@ -3508,7 +3283,7 @@
                     badgeEl.className = 'bg-slate-500/30 border border-white/20 text-white px-2.5 py-1 rounded-full text-[10px] font-bold';
                 }
             }
-            const blocked = blockedByNoProduct || blockedByNonWorkingDay || blockedByClosedDate || blockedByCutoff || blockedByLimit;
+            const blocked = blockedByNoProduct || blockedByNonWorkingDay || blockedByClosedDate || blockedByLimit;
             if (saveBtn) {
                 saveBtn.dataset.capacityBlocked = blocked ? '1' : '0';
                 saveBtn.disabled = blocked || Boolean(window.orderSubmitBusy);
@@ -3642,7 +3417,7 @@
             const dateInput = document.getElementById('dateLimitDate');
             if (!dateInput) return;
             window.renderClosedDatesAdmin();
-            if (!dateInput.value) dateInput.value = document.getElementById('orderDate')?.value || getMalaysiaDateTimeParts().date;
+            if (!dateInput.value) dateInput.value = document.getElementById('orderDate')?.value || localDateStr();
             const date = dateInput.value;
             const limitInput = document.getElementById('dateOrderLimitInput');
             const source = document.getElementById('dateLimitSourceText');
@@ -3736,7 +3511,11 @@
             document.getElementById('orderAdminSummary')?.classList.toggle('hidden', !isAdmin);
             document.getElementById('orderAdminListCard')?.classList.toggle('hidden', !isAdmin);
             document.getElementById('orderStatusField')?.classList.toggle('hidden', !isAdmin);
-            document.getElementById('orderMobileStickyBar')?.classList.toggle('hidden', isAdmin);
+            document.getElementById('orderMobileStickyBar')?.classList.add('hidden');
+            document.getElementById('orderFormCard')?.classList.toggle('hidden', !isAdmin);
+            document.getElementById('orderCapacityCard')?.classList.toggle('hidden', !isAdmin);
+            document.getElementById('orderCalendarCard')?.classList.toggle('hidden', !isAdmin);
+            document.getElementById('checkoutPlaceAdminCard')?.classList.toggle('hidden', !isAdmin);
             const noticeInput = document.getElementById('orderNoticeInput');
             if (noticeInput && document.activeElement !== noticeInput) noticeInput.value = String(window.appState.settings.orderNotice || '');
             const dateInput = document.getElementById('orderDate');
@@ -3760,7 +3539,8 @@
                 date.min = window.appState.isAdmin ? '' : getMalaysiaDateTimeParts().date;
             }
             const customer = document.getElementById('orderCustomer'); if (customer) customer.value = '';
-            const placeSelect = document.getElementById('orderPlace'); if (placeSelect) placeSelect.value = '';
+            const note = document.getElementById('orderNote'); if (note) note.value = '';
+            const place = document.getElementById('orderPlace'); if (place) place.value = '';
             const status = document.getElementById('orderStatus'); if (status) status.value = 'Pending';
             renderOrderProductSelector();
             const firstProduct = window.appState.isAdmin
@@ -3802,7 +3582,6 @@
             const order = window.appState.orders.find(o => o.id === id);
             if (!order) return;
             document.getElementById('orderEditId').value = order.id;
-            document.getElementById('orderPlace').value = order.placeId || '';
             document.getElementById('orderProduct').value = order.productId || 'kek-batik';
             renderOrderProductSelector();
             document.getElementById('orderQty').value = Math.max(1, Number(order.qty || 1));
@@ -3855,7 +3634,7 @@
                 profit,
                 date,
                 productId,
-                notes: `Customer order — ${String(order.customer || 'Customer').trim() || 'Customer'}`,
+                notes: [`Customer order — ${String(order.customer || 'Customer').trim() || 'Customer'}`, order.placeName ? `Place: ${order.placeName}` : '', order.note || ''].filter(Boolean).join(' · '),
                 paymentMethod: existingSale?.paymentMethod || 'Customer Order',
                 // Order status controls payment state for customer-order sales:
                 // Completed means the payment has been confirmed.
@@ -3881,18 +3660,20 @@
 
         window.handleSaveOrder = async function() {
             const isAdmin = window.appState.isAdmin;
-            const productId = document.getElementById('orderProduct').value || '';
+            const productId = document.getElementById('orderProduct').value || 'kek-batik';
             const qty = parseInt(document.getElementById('orderQty').value);
-            const date = document.getElementById('orderDate').value || getMalaysiaDateTimeParts().date;
+            const date = document.getElementById('orderDate').value || localDateStr();
             const customer = document.getElementById('orderCustomer').value.trim();
+            const orderNote = document.getElementById('orderNote')?.value.trim() || '';
+            const selectedPlace = getSelectedCheckoutPlace();
             const editId = isAdmin ? document.getElementById('orderEditId').value.trim() : '';
             const status = isAdmin ? (document.getElementById('orderStatus').value || 'Pending') : 'Pending';
             if (!Number.isFinite(qty) || qty < 1) return showToast('Quantity must be at least 1.', 'error');
-            if (!isAdmin && date < getMalaysiaDateTimeParts().date) return showToast('Please choose today or a future date.', 'error');
-            if (!isAdmin && isOrderCutoffPassedForDate(date)) return showToast(`Same-day orders close at ${formatCutoffTime()} Malaysia time. Please choose a future date.`, 'error');
-            if (!isAdmin && !productId) return showToast('Please select a cake photo above before placing your order.', 'error');
-            if (!isAdmin && (!isProductOpenForOrder(productId, date) || isOrderDateClosed(date))) return showToast('This product is not open for ordering on the selected date. Please choose one of its available dates above.', 'error');
+            if (!isAdmin && (!productId || !isProductOpenForOrder(productId, date))) return showToast('This product is not open for ordering right now.', 'error');
             if (!isAdmin && !customer) return showToast('Please enter your name.', 'error');
+            if (!isAdmin && !selectedPlace) return showToast('Please choose your delivery / COD place in the pop-up.', 'error');
+            if (!isAdmin && date < getMalaysiaDateTimeParts().date) return showToast('Please choose today or a future date.', 'error');
+            if (!isAdmin && isOrderCutoffPassedForDate(date)) return showToast(`Same-day orders close at ${formatOrderCutoffTime()} Malaysia time. Please choose a future date.`, 'error');
             if (!isAdmin && !isWorkingOrderDate(date)) return showToast('Please choose a valid order date.', 'error');
             if (!isAdmin && isOrderDateClosed(date)) return showToast(`${date} is closed for orders. Please choose another date.`, 'error');
             if (!isAdmin) {
@@ -3904,16 +3685,12 @@
             if (editId && !existing) return showToast('Order not found.', 'error');
             const product = window.appState.products.find(p => p.id === productId);
             const unitPrice = Number(existing?.unitPrice ?? product?.defaultPrice ?? 0);
-            const place = getSelectedCheckoutPlace();
-            const subtotal = unitPrice * qty;
-            const codCharge = calculateCodCharge(subtotal, place);
-            const total = subtotal + codCharge;
-            if (!isAdmin && !place) return showToast('Please choose a delivery / COD place.', 'error');
-            if (!isAdmin && place) {
-                const minimumBoxes = Math.max(1, Number(place.minBoxes || 1));
-                const minimumAmount = Math.max(0, Number(place.minAmount || 0));
-                if (qty < minimumBoxes) return showToast(`${place.name} requires at least ${minimumBoxes} box(es).`, 'error');
-                if (subtotal < minimumAmount) return showToast(`${place.name} requires a minimum subtotal of RM ${minimumAmount.toFixed(2)}.`, 'error');
+            const productSubtotal = unitPrice * qty;
+            const codCharge = !isAdmin ? getCodCharge(productSubtotal, selectedPlace) : Number(existing?.codCharge || 0);
+            const total = productSubtotal + codCharge;
+            if (!isAdmin && selectedPlace) {
+                if (qty < Math.max(1, Number(selectedPlace.minBoxes || 1))) return showToast(`${selectedPlace.name} requires at least ${Math.max(1, Number(selectedPlace.minBoxes || 1))} box(es).`, 'error');
+                if (productSubtotal < Math.max(0, Number(selectedPlace.minAmount || 0))) return showToast(`${selectedPlace.name} requires a minimum subtotal of RM ${Number(selectedPlace.minAmount).toFixed(2)}.`, 'error');
             }
             const orderNo = existing?.orderNo || `ORD-${date.replace(/-/g, '')}-${String(Date.now()).slice(-5)}`;
             const record = {
@@ -3922,12 +3699,11 @@
                 productId,
                 qty,
                 unitPrice,
-                productSubtotal: subtotal,
+                productSubtotal,
                 codCharge,
-                codType: place?.codType || 'fixed',
-                codValue: Number(place?.codValue || 0),
-                placeId: place?.id || '',
-                placeName: place?.name || '',
+                placeId: selectedPlace?.id || existing?.placeId || '',
+                placeName: selectedPlace?.name || existing?.placeName || '',
+                note: orderNote,
                 total,
                 date,
                 customer,
@@ -4004,9 +3780,10 @@
                     }
                 }
 
+                if (!isAdmin && !editId) window.closeProductOrderModal();
                 if (editId) showToast(saleSyncFailed ? `${orderNo} updated, but Sales sync needs retry.` : `${orderNo} updated.`, saleSyncFailed ? 'error' : 'success');
                 else showToast(saleSyncFailed ? `Order received, but Sales sync failed. Please retry.` : (isAdmin ? `${orderNo} added.` : `Order received! ${orderNo}.`), saleSyncFailed ? 'error' : 'success');
-                if (!isAdmin && !editId) window.showOrderSuccess(record);
+                if (!isAdmin && !editId) { window.closeProductOrderModal(); window.showOrderSuccess(record); }
                 resetOrderForm();
             } catch (err) {
                 showToast(editId ? 'Failed to update order.' : 'Failed to place order.', 'error');
@@ -4089,7 +3866,7 @@
                             </div>
                             <div class="font-bold text-choco-900 mt-1"><i class="fa-solid ${escapeHtml(getProductIcon(order.productId))} text-choco-500 mr-1"></i>${escapeHtml(getProductName(order.productId))} × ${Number(order.qty || 1)}</div>
                             <div class="text-[10px] font-bold text-choco-700 mt-1">RM ${Number(order.total ?? (Number(order.qty || 1) * Number(order.unitPrice || 0))).toFixed(2)} total <span class="font-normal text-slate-400">(${Number(order.unitPrice || 0).toFixed(2)}/box)</span></div>
-                            <div class="text-[10px] text-slate-500 mt-1">${escapeHtml(order.date || '')}${order.placeName ? ' · ' + escapeHtml(order.placeName) : ''}${order.customer ? ' · ' + escapeHtml(order.customer) : ''}</div>
+                            <div class="text-[10px] text-slate-500 mt-1">${escapeHtml(order.date || '')}${order.customer ? ' · ' + escapeHtml(order.customer) : ''}</div>
                         </div>
                     </div>
                     <div class="flex justify-end gap-2 border-t border-slate-100 pt-2">
@@ -4515,246 +4292,141 @@
             reader.readAsDataURL(file);
         };
 
-        function renderCheckoutPlaceSelector() {
-            const select = document.getElementById('orderPlace');
-            if (!select) return;
-            const current = select.value;
-            select.innerHTML = `<option value="">Choose your place</option>` + window.appState.checkoutPlaces.map(place =>
-                `<option value="${escapeHtml(place.id)}">${escapeHtml(place.name)}</option>`
-            ).join('');
-            select.value = window.appState.checkoutPlaces.some(place => place.id === current) ? current : '';
-            renderOrderPriceSummary();
+        function getAvailableProductDates(productId, count = 30) {
+            const dates = [];
+            for (let i=0; i<90 && dates.length<count; i++) {
+                const date = dateOffsetStr(i);
+                if (isOrderCutoffPassedForDate(date) || isOrderDateClosed(date) || !isProductOpenForOrder(productId,date)) continue;
+                const cap = getEffectiveOrderCapacity(date, productId);
+                if (cap.limit <= 0 || cap.remaining > 0) dates.push(date);
+            }
+            return dates;
         }
-
-        function renderCheckoutPlaceAdminList() {
-            const list = document.getElementById('checkoutPlacesAdminList');
-            if (!list) return;
-            if (!window.appState.isAdmin) {
-                list.innerHTML = '';
-                return;
-            }
-            if (!window.appState.checkoutPlaces.length) {
-                list.innerHTML = '<div class="text-[10px] text-slate-400 border border-dashed border-slate-200 rounded-xl p-3">No places yet. Add your first COD place above.</div>';
-                return;
-            }
-            list.innerHTML = window.appState.checkoutPlaces.map(place => {
-                const feeText = place.codType === 'percent' ? `${Number(place.codValue || 0)}% of subtotal` : `RM ${Number(place.codValue || 0).toFixed(2)} flat fee`;
-                return `<div class="rounded-xl border border-slate-100 p-3 flex items-start justify-between gap-3">
-                    <div class="min-w-0"><div class="text-xs font-bold text-choco-900">${escapeHtml(place.name)}</div>
-                    <div class="text-[10px] text-slate-500 mt-1">Minimum ${Math.max(1, Number(place.minBoxes || 1))} box(es)${Number(place.minAmount || 0) > 0 ? ` · RM ${Number(place.minAmount).toFixed(2)} subtotal` : ''}</div>
-                    <div class="text-[10px] text-emerald-700 font-semibold mt-0.5">COD: ${escapeHtml(feeText)}</div></div>
-                    <div class="flex gap-1 shrink-0"><button type="button" onclick="handleEditCheckoutPlace('${escapeHtml(place.id)}')" class="px-2 py-1.5 rounded-lg bg-choco-50 text-choco-700 text-[10px] font-bold"><i class="fa-solid fa-pen"></i></button><button type="button" onclick="handleDeleteCheckoutPlace('${escapeHtml(place.id)}')" class="px-2 py-1.5 rounded-lg bg-rose-50 text-rose-600 text-[10px] font-bold"><i class="fa-solid fa-trash"></i></button></div>
-                </div>`;
-            }).join('');
+        function formatProductDateLabel(date) {
+            return new Date(`${date}T12:00:00`).toLocaleDateString('en-MY',{weekday:'short',day:'numeric',month:'short'});
         }
-
-        window.resetCheckoutPlaceForm = function() {
-            const editId = document.getElementById('checkoutPlaceEditId'); if (editId) editId.value = '';
-            const name = document.getElementById('checkoutPlaceName'); if (name) name.value = '';
-            const boxes = document.getElementById('checkoutMinBoxes'); if (boxes) boxes.value = '1';
-            const amount = document.getElementById('checkoutMinAmount'); if (amount) amount.value = '0';
-            const type = document.getElementById('checkoutCodType'); if (type) type.value = 'fixed';
-            const value = document.getElementById('checkoutCodValue'); if (value) value.value = '0';
-            const save = document.getElementById('checkoutPlaceSaveBtn'); if (save) save.innerHTML = '<i class="fa-solid fa-plus mr-1"></i> Add Place';
-            document.getElementById('checkoutPlaceCancelBtn')?.classList.add('hidden');
-        };
-
-        window.handleEditCheckoutPlace = function(id) {
-            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
-            const place = window.appState.checkoutPlaces.find(item => item.id === id);
-            if (!place) return;
-            document.getElementById('checkoutPlaceEditId').value = place.id;
-            document.getElementById('checkoutPlaceName').value = place.name || '';
-            document.getElementById('checkoutMinBoxes').value = Math.max(1, Number(place.minBoxes || 1));
-            document.getElementById('checkoutMinAmount').value = Math.max(0, Number(place.minAmount || 0));
-            document.getElementById('checkoutCodType').value = place.codType === 'percent' ? 'percent' : 'fixed';
-            document.getElementById('checkoutCodValue').value = Math.max(0, Number(place.codValue || 0));
-            document.getElementById('checkoutPlaceSaveBtn').innerHTML = '<i class="fa-solid fa-floppy-disk mr-1"></i> Save Place';
-            document.getElementById('checkoutPlaceCancelBtn').classList.remove('hidden');
-            document.getElementById('checkoutPlaceName').scrollIntoView({ behavior: 'smooth', block: 'center' });
-        };
-
-        window.handleSaveCheckoutPlace = async function() {
-            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
-            const name = document.getElementById('checkoutPlaceName').value.trim();
-            if (!name) return showToast('Enter a place or area name.', 'error');
-            const minBoxes = Math.max(1, parseInt(document.getElementById('checkoutMinBoxes').value, 10) || 1);
-            const minAmount = Math.max(0, Number(document.getElementById('checkoutMinAmount').value) || 0);
-            const codType = document.getElementById('checkoutCodType').value === 'percent' ? 'percent' : 'fixed';
-            const codValue = Math.max(0, Number(document.getElementById('checkoutCodValue').value) || 0);
-            const editId = document.getElementById('checkoutPlaceEditId').value.trim();
-            const duplicate = window.appState.checkoutPlaces.some(place => place.id !== editId && place.name.toLowerCase() === name.toLowerCase());
-            if (duplicate) return showToast('That place already exists.', 'error');
-            const id = editId || `${slugify(name)}-${Date.now().toString(36)}`;
-            const place = { name, minBoxes, minAmount, codType, codValue, active: true, updatedAt: Date.now() };
-            try {
-                await set(getDbRef(`settings/checkout_config/places/${id}`), place);
-                resetCheckoutPlaceForm();
-                showToast(`COD settings saved for ${name}.`, 'success');
-            } catch (err) {
-                console.error('Failed to save checkout place', err);
-                showToast('Failed to save place settings.', 'error');
-            }
-        };
-
-        window.handleDeleteCheckoutPlace = async function(id) {
-            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
-            const place = window.appState.checkoutPlaces.find(item => item.id === id);
-            if (!place || !confirm(`Delete ${place.name} from available COD places? Existing orders are kept.`)) return;
-            try {
-                await remove(getDbRef(`settings/checkout_config/places/${id}`));
-                if (document.getElementById('checkoutPlaceEditId')?.value === id) resetCheckoutPlaceForm();
-                showToast(`${place.name} removed.`, 'success');
-            } catch (err) { showToast('Failed to delete place.', 'error'); }
-        };
-
-        window.handleGalleryImageSelected = function(event) {
-            const file = event?.target?.files?.[0];
-            if (!file) return;
-            if (!file.type.startsWith('image/')) return showToast('Please choose an image file.', 'error');
-            if (file.size > 15 * 1024 * 1024) return showToast('Please choose an image smaller than 15 MB.', 'error');
-            const reader = new FileReader();
-            reader.onerror = () => showToast('Could not read this image.', 'error');
-            reader.onload = () => {
-                const image = new Image();
-                image.onerror = () => showToast('This image could not be opened.', 'error');
-                image.onload = () => {
-                    const maxDim = 900;
-                    const scale = Math.min(1, maxDim / Math.max(image.width, image.height));
-                    const canvas = document.createElement('canvas');
-                    canvas.width = Math.max(1, Math.round(image.width * scale));
-                    canvas.height = Math.max(1, Math.round(image.height * scale));
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) return showToast('Image conversion is not supported in this browser.', 'error');
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-                    window.appState.galleryImageBase64 = canvas.toDataURL('image/jpeg', 0.78);
-                    const preview = document.getElementById('galleryImagePreview');
-                    const wrap = document.getElementById('galleryImagePreviewWrap');
-                    if (preview) preview.src = window.appState.galleryImageBase64;
-                    if (wrap) wrap.classList.remove('hidden');
-                };
-                image.src = String(reader.result || '');
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.handleSaveGalleryImage = async function() {
-            if (!window.appState.isAdmin) return showToast('Admin access required.', 'error');
-            const productId = document.getElementById('galleryProductSelect')?.value || '';
-            const imageUrl = window.appState.galleryImageBase64;
-            const product = getProduct(productId);
-            if (!product) return showToast('Choose a product first.', 'error');
-            if (!imageUrl) return showToast('Choose a picture to upload.', 'error');
-            try {
-                await set(getDbRef(`products/${productId}`), { ...product, imageUrl, imageUpdatedAt: Date.now() });
-                window.appState.galleryImageBase64 = null;
-                const fileInput = document.getElementById('galleryImageFile'); if (fileInput) fileInput.value = '';
-                document.getElementById('galleryImagePreviewWrap')?.classList.add('hidden');
-                showToast(`${product.name} picture saved to the gallery.`, 'success');
-            } catch (err) {
-                console.error('Failed to save gallery picture', err);
-                showToast('Failed to save picture. Try a smaller image.', 'error');
-            }
-        };
-
         function renderGallery() {
             const grid = document.getElementById('customerGalleryGrid');
-            const adminCard = document.getElementById('galleryAdminUploadCard');
+            const upload = document.getElementById('galleryAdminUploadCard');
             const productSelect = document.getElementById('galleryProductSelect');
-            const searchInput = document.getElementById('gallerySearchInput');
             const categoryFilter = document.getElementById('galleryCategoryFilter');
-            const countEl = document.getElementById('galleryProductsCount');
-            if (adminCard) adminCard.classList.toggle('hidden', !window.appState.isAdmin);
+            if (upload) upload.classList.toggle('hidden', !window.appState.isAdmin);
             if (productSelect) {
-                const current = productSelect.value;
-                productSelect.innerHTML = window.appState.products.map(product => `<option value="${escapeHtml(product.id)}">${escapeHtml(product.name)}</option>`).join('');
-                if (window.appState.products.some(product => product.id === current)) productSelect.value = current;
+                const old = productSelect.value;
+                productSelect.innerHTML = window.appState.products.map(p=>`<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join('');
+                productSelect.value = window.appState.products.some(p=>p.id===old) ? old : (window.appState.products[0]?.id || '');
+                syncGalleryProductDetailsForm();
             }
             if (!grid) return;
-
-            const products = window.appState.products.filter(product => product.active !== false);
-            const categories = [...new Set(products.map(getProductCategory))].sort((a, b) => a.localeCompare(b));
+            const active = window.appState.products.filter(p=>p.active!==false);
+            const categories = [...new Set(active.map(getProductCategory))].sort();
+            const oldCat = categoryFilter?.value || 'all';
             if (categoryFilter) {
-                const currentCategory = categoryFilter.value || 'all';
-                categoryFilter.innerHTML = `<option value="all">All categories</option>` + categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
-                categoryFilter.value = categories.includes(currentCategory) ? currentCategory : 'all';
+                categoryFilter.innerHTML = `<option value="all">All categories</option>` + categories.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+                categoryFilter.value = categories.includes(oldCat) ? oldCat : 'all';
             }
-            if (!products.length) {
-                if (countEl) countEl.innerText = 'No products available yet';
-                grid.innerHTML = '<div class="col-span-2 text-center py-10 px-4 text-xs text-slate-400 bg-white rounded-2xl border border-choco-100">Our cake gallery is being prepared. Please check back soon.</div>';
-                return;
-            }
-
-            const query = String(searchInput?.value || '').trim().toLowerCase();
-            const selectedCategory = categoryFilter?.value || 'all';
-            const filtered = products.filter(product => {
-                const searchable = [product.name, product.description, product.size, getProductCategory(product)].join(' ').toLowerCase();
-                return (!query || searchable.includes(query)) && (selectedCategory === 'all' || getProductCategory(product) === selectedCategory);
-            });
-            if (countEl) countEl.innerText = `${filtered.length} of ${products.length} product${products.length === 1 ? '' : 's'} · browse photos, price and reviews`;
-            if (!filtered.length) {
-                grid.innerHTML = '<div class="col-span-2 text-center py-10 px-4 text-xs text-slate-400 bg-white rounded-2xl border border-choco-100"><i class="fa-solid fa-magnifying-glass text-xl text-choco-300 mb-2"></i><div class="font-bold text-slate-500">No matching products</div><div class="mt-1">Try another search or category.</div></div>';
-                return;
-            }
-
+            const query = String(document.getElementById('gallerySearchInput')?.value || '').trim().toLowerCase();
+            const cat = categoryFilter?.value || 'all';
+            const filtered = active.filter(p => (!query || [p.name,p.description,p.size,getProductCategory(p)].join(' ').toLowerCase().includes(query)) && (cat==='all' || getProductCategory(p)===cat));
+            const count = document.getElementById('galleryProductsCount');
+            if (count) count.innerText = `${filtered.length} product${filtered.length===1?'':'s'} · Tap a photo to order`;
+            if (!filtered.length) { grid.innerHTML='<div class="col-span-2 text-center text-xs text-slate-400 bg-white border border-choco-100 rounded-2xl p-8">No matching products. Try another search.</div>'; return; }
             grid.innerHTML = filtered.map(product => {
-                const image = String(product.imageUrl || product.image || product.photo || '').trim();
-                const category = getProductCategory(product);
-                const isSelected = document.getElementById('orderProduct')?.value === product.id;
-                const visual = image
-                    ? `<button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" aria-label="Select ${escapeHtml(product.name)} to order" class="block w-full relative"><img src="${escapeHtml(image)}" alt="${escapeHtml(product.name)} product photo — tap to select" loading="lazy" class="gallery-product-image cursor-pointer"><span class="absolute bottom-2 right-2 rounded-full bg-white/95 border border-choco-100 px-2 py-1 text-[8px] font-extrabold text-choco-800 shadow-sm"><i class="fa-solid fa-bag-shopping mr-1"></i>Tap to order</span></button>`
-                    : `<button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" aria-label="Select ${escapeHtml(product.name)} to order" class="gallery-product-image flex items-center justify-center text-5xl text-choco-400 cursor-pointer"><i class="fa-solid ${escapeHtml(product.icon || 'fa-cookie-bite')}"></i></button>`;
-                const productReviews = window.appState.reviews.filter(review => review.productId === product.id);
-                const averageRating = productReviews.length ? productReviews.reduce((sum, review) => sum + Math.max(0, Math.min(5, Number(review.rating || 0))), 0) / productReviews.length : 0;
-                const ratingMarkup = productReviews.length
-                    ? `<div class="flex items-center gap-1 text-[9px]"><span class="text-amber-500">${Array.from({ length: 5 }, (_, i) => `<i class="fa-solid fa-star ${i < Math.round(averageRating) ? '' : 'text-slate-200'}"></i>`).join('')}</span><span class="font-bold text-slate-500">${averageRating.toFixed(1)} (${productReviews.length})</span></div>`
-                    : `<div class="text-[9px] text-slate-400"><i class="fa-regular fa-star mr-1"></i>No reviews yet</div>`;
-                const availableDates = getAvailableProductDates(product.id, 3);
-                const nextDate = availableDates[0] || '';
-                const availability = nextDate ? availableDates.map(formatProductDateLabel).join(' · ') : 'No upcoming dates available';
-                const availableClass = nextDate ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100';
-                const description = String(product.description || '').trim();
-                const size = String(product.size || '').trim();
-                return `<article class="gallery-product-card bg-white ${isSelected ? 'border-2 border-choco-700 ring-2 ring-choco-100' : 'border border-choco-100'} rounded-2xl shadow-sm flex flex-col">
-                    <div class="relative">${visual}<span class="absolute left-2 top-2 max-w-[85%] truncate rounded-full border border-white/80 bg-white/90 px-2 py-1 text-[8px] font-extrabold text-choco-800 shadow-sm">${escapeHtml(category)}</span>${isSelected ? '<span class="absolute right-2 top-2 rounded-full bg-choco-700 text-white px-2 py-1 text-[8px] font-extrabold shadow"><i class="fa-solid fa-check mr-1"></i>Selected</span>' : ''}</div>
-                    <div class="p-3 space-y-2 flex-1 flex flex-col">
-                        <div class="font-extrabold text-choco-900 text-xs leading-snug">${escapeHtml(product.name)}</div>
-                        ${size ? `<div class="text-[9px] text-slate-500"><i class="fa-solid fa-ruler-combined mr-1 text-choco-400"></i>${escapeHtml(size)}</div>` : ''}
-                        ${description ? `<p class="text-[10px] text-slate-600 leading-relaxed line-clamp-3">${escapeHtml(description)}</p>` : `<p class="text-[10px] text-slate-400 leading-relaxed">Freshly prepared with care.</p>`}
-                        ${ratingMarkup}
-                        <div class="mt-auto pt-1">
-                            <div class="text-base font-extrabold text-choco-700">RM ${Number(product.defaultPrice || 0).toFixed(2)} <span class="text-[9px] font-semibold text-slate-400">/ box</span></div>
-                            <div class="mt-1 mb-2 rounded-xl border px-2 py-2 text-[8px] leading-relaxed font-bold ${availableClass}"><div><i class="fa-solid ${nextDate ? 'fa-calendar-check' : 'fa-circle-xmark'} mr-1"></i>${nextDate ? 'Available dates' : 'Availability'}</div><div class="mt-0.5 font-semibold">${escapeHtml(availability)}</div></div>
-                            <button type="button" onclick="orderFromGallery('${escapeHtml(product.id)}')" class="w-full ${isSelected ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-choco-700 hover:bg-choco-800'} text-white py-2.5 rounded-xl text-[10px] font-bold transition"><i class="fa-solid ${isSelected ? 'fa-check' : 'fa-bag-shopping'} mr-1"></i>${isSelected ? 'Selected · View Dates' : (nextDate ? 'Choose & Order' : 'View Availability')}</button>
-                        </div>
-                    </div>
-                </article>`;
+                const photo = String(product.imageUrl||product.image||product.photo||'').trim();
+                const dates = getAvailableProductDates(product.id,3);
+                const isOpen = dates.length>0;
+                const selected = window.productOrderModalState?.productId === product.id;
+                const photoUi = photo ? `<img src="${escapeHtml(photo)}" alt="${escapeHtml(product.name)}" loading="lazy" class="gallery-product-image">` : `<div class="gallery-product-image flex items-center justify-center text-5xl text-choco-400"><i class="fa-solid ${escapeHtml(product.icon||'fa-cookie-bite')}"></i></div>`;
+                const schedule = dates.length ? dates.map(formatProductDateLabel).join(' · ') : 'No upcoming dates';
+                return `<button type="button" onclick="window.openProductCheckout('${escapeHtml(product.id)}')" class="gallery-product-card text-left bg-white ${selected?'border-2 border-choco-700 ring-2 ring-choco-100':'border border-choco-100'} rounded-2xl shadow-sm overflow-hidden"><div class="relative">${photoUi}<span class="absolute left-2 top-2 rounded-full bg-white/95 border border-choco-100 px-2 py-1 text-[8px] font-extrabold text-choco-800">${escapeHtml(getProductCategory(product))}</span><span class="absolute right-2 bottom-2 rounded-full bg-white/95 border border-choco-100 px-2 py-1 text-[8px] font-extrabold text-choco-800"><i class="fa-solid fa-expand mr-1"></i>View details</span></div><div class="p-3 space-y-2"><div class="font-extrabold text-xs text-choco-900 leading-snug">${escapeHtml(product.name)}</div>${product.size?`<div class="text-[9px] text-slate-500">${escapeHtml(product.size)}</div>`:''}<div class="text-base font-extrabold text-choco-700">RM ${Number(product.defaultPrice||0).toFixed(2)} <span class="text-[9px] text-slate-400">/ box</span></div><div class="rounded-lg border px-2 py-1.5 text-[8px] leading-relaxed ${isOpen?'border-emerald-100 bg-emerald-50 text-emerald-700':'border-rose-100 bg-rose-50 text-rose-600'}"><i class="fa-solid fa-calendar-check mr-1"></i>${escapeHtml(schedule)}</div><div class="text-[9px] text-choco-700 font-extrabold">${isOpen?'Tap to choose date & order':'See product details'}</div></div></button>`;
             }).join('');
         }
-        // Expose the renderer because gallery search and category controls use inline event handlers.
         window.renderGallery = renderGallery;
 
-        window.orderFromGallery = function(productId) {
-            const product = getProduct(productId);
-            if (!product || product.active === false) return showToast('This product is not available for ordering.', 'error');
-            switchTab('orders');
-            const availableDates = getAvailableProductDates(productId, 1);
-            const orderDate = availableDates[0] || getMalaysiaDateTimeParts().date;
-            const dateInput = document.getElementById('orderDate');
-            const productInput = document.getElementById('orderProduct');
-            if (productInput) productInput.value = productId;
-            if (dateInput) dateInput.value = orderDate;
-            renderOrderProductSelector();
-            renderGallery();
-            renderOrderCalendar();
-            renderOrderCapacity();
-            renderOrderCutoffNotice();
-            renderOrderPriceSummary();
-            if (!availableDates.length) showToast(`${product.name} currently has no available order dates. Please check its calendar below.`, 'info');
-            document.getElementById('orderCalendarCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        function syncGalleryProductDetailsForm() {
+            const id=document.getElementById('galleryProductSelect')?.value;
+            const product=id?getProduct(id):null;
+            if (!product) return;
+            const cat=document.getElementById('galleryCategory'); if(cat) cat.value=getProductCategory(product);
+            const size=document.getElementById('gallerySize'); if(size) size.value=product.size||'';
+            const desc=document.getElementById('galleryDescription'); if(desc) desc.value=product.description||'';
+            const preview=document.getElementById('galleryImagePreview'); const wrap=document.getElementById('galleryImagePreviewWrap');
+            if (preview && product.imageUrl) { preview.src=product.imageUrl; wrap?.classList.remove('hidden'); }
+        }
+        window.syncGalleryProductDetailsForm = syncGalleryProductDetailsForm;
+        window.handleGalleryImageSelected = function(event) {
+            const file=event?.target?.files?.[0]; if(!file) return;
+            if(!file.type.startsWith('image/')) return showToast('Please choose an image file.','error');
+            if(file.size>15*1024*1024) return showToast('Choose an image smaller than 15 MB.','error');
+            const reader=new FileReader(); reader.onerror=()=>showToast('Could not read image.','error');
+            reader.onload=()=>{ const img=new Image(); img.onerror=()=>showToast('Could not open image.','error'); img.onload=()=>{ const scale=Math.min(1,900/Math.max(img.width,img.height)); const canvas=document.createElement('canvas'); canvas.width=Math.max(1,Math.round(img.width*scale)); canvas.height=Math.max(1,Math.round(img.height*scale)); const ctx=canvas.getContext('2d'); if(!ctx)return showToast('Image conversion is unavailable.','error'); ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);window.appState.pendingGalleryImage=canvas.toDataURL('image/jpeg',.78);const preview=document.getElementById('galleryImagePreview');if(preview)preview.src=window.appState.pendingGalleryImage;document.getElementById('galleryImagePreviewWrap')?.classList.remove('hidden'); }; img.src=String(reader.result||''); };
+            reader.readAsDataURL(file);
         };
+        window.handleSaveGalleryProductDetails = async function() {
+            if(!window.appState.isAdmin)return showToast('Admin access required.','error');
+            const id=document.getElementById('galleryProductSelect')?.value; const product=getProduct(id); if(!product)return showToast('Choose a product first.','error');
+            const image=window.appState.pendingGalleryImage||product.imageUrl||'';
+            const category=document.getElementById('galleryCategory')?.value||'Other'; const size=document.getElementById('gallerySize')?.value.trim()||''; const description=document.getElementById('galleryDescription')?.value.trim()||'';
+            try { await set(getDbRef(`products/${id}`),{...product,imageUrl:image,category,size,description,imageUpdatedAt:Date.now()}); window.appState.pendingGalleryImage=null;const fi=document.getElementById('galleryImageFile');if(fi)fi.value='';renderGallery();showToast(`${product.name} details saved.`, 'success'); }
+            catch(err){console.error(err);showToast('Could not save product details. Try a smaller picture.','error');}
+        };
+
+        function renderCheckoutPlacesAdminList() {
+            const list=document.getElementById('checkoutPlacesAdminList'); if(!list)return;
+            if(!window.appState.checkoutPlaces.length){list.innerHTML='<div class="text-[10px] text-slate-400 border border-dashed border-slate-200 rounded-xl p-3">No delivery places configured yet.</div>';return;}
+            list.innerHTML=window.appState.checkoutPlaces.map(place=>`<div class="flex items-start justify-between gap-3 rounded-xl border border-slate-100 p-3"><div><div class="text-xs font-bold text-choco-900">${escapeHtml(place.name)}</div><div class="text-[9px] text-slate-500 mt-1">Minimum ${Math.max(1,Number(place.minBoxes||1))} box(es)${Number(place.minAmount||0)>0?` · RM ${Number(place.minAmount).toFixed(2)} subtotal`:''}</div><div class="text-[9px] font-bold text-emerald-700 mt-1">COD: ${place.codType==='percent'?`${Number(place.codValue||0)}% of subtotal`:`RM ${Number(place.codValue||0).toFixed(2)} flat`}</div></div><div class="flex gap-1"><button onclick="handleEditCheckoutPlace('${escapeHtml(place.id)}')" class="px-2 py-1.5 rounded-lg bg-choco-50 text-choco-700 text-[10px]"><i class="fa-solid fa-pen"></i></button><button onclick="handleDeleteCheckoutPlace('${escapeHtml(place.id)}')" class="px-2 py-1.5 rounded-lg bg-rose-50 text-rose-600 text-[10px]"><i class="fa-solid fa-trash"></i></button></div></div>`).join('');
+        }
+        window.resetCheckoutPlaceForm=function(){const fields={checkoutPlaceEditId:'',checkoutPlaceName:'',checkoutMinBoxes:'1',checkoutMinAmount:'0',checkoutCodType:'fixed',checkoutCodValue:'0'};Object.entries(fields).forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.value=v;});document.getElementById('checkoutPlaceSaveBtn').innerText='Add Place';document.getElementById('checkoutPlaceCancelBtn')?.classList.add('hidden');};
+        window.handleEditCheckoutPlace=function(id){if(!window.appState.isAdmin)return;const p=window.appState.checkoutPlaces.find(x=>x.id===id);if(!p)return;document.getElementById('checkoutPlaceEditId').value=p.id;document.getElementById('checkoutPlaceName').value=p.name||'';document.getElementById('checkoutMinBoxes').value=Math.max(1,Number(p.minBoxes||1));document.getElementById('checkoutMinAmount').value=Math.max(0,Number(p.minAmount||0));document.getElementById('checkoutCodType').value=p.codType==='percent'?'percent':'fixed';document.getElementById('checkoutCodValue').value=Math.max(0,Number(p.codValue||0));document.getElementById('checkoutPlaceSaveBtn').innerText='Save Place';document.getElementById('checkoutPlaceCancelBtn').classList.remove('hidden');};
+        window.handleSaveCheckoutPlace=async function(){if(!window.appState.isAdmin)return showToast('Admin access required.','error');const name=document.getElementById('checkoutPlaceName').value.trim();if(!name)return showToast('Enter a place name.','error');const id=document.getElementById('checkoutPlaceEditId').value.trim()||`${slugify(name)}-${Date.now().toString(36)}`;const duplicate=window.appState.checkoutPlaces.some(p=>p.id!==document.getElementById('checkoutPlaceEditId').value&&p.name.toLowerCase()===name.toLowerCase());if(duplicate)return showToast('Place already exists.','error');const record={name,minBoxes:Math.max(1,parseInt(document.getElementById('checkoutMinBoxes').value)||1),minAmount:Math.max(0,Number(document.getElementById('checkoutMinAmount').value)||0),codType:document.getElementById('checkoutCodType').value==='percent'?'percent':'fixed',codValue:Math.max(0,Number(document.getElementById('checkoutCodValue').value)||0),active:true,updatedAt:Date.now()};try{await set(getDbRef(`settings/checkout_config/places/${id}`),record);resetCheckoutPlaceForm();showToast(`Saved COD settings for ${name}.`,'success');}catch(e){showToast('Failed to save place.','error');}};
+        window.handleDeleteCheckoutPlace=async function(id){if(!window.appState.isAdmin)return;const p=window.appState.checkoutPlaces.find(x=>x.id===id);if(!p||!confirm(`Delete ${p.name}? Existing orders will be retained.`))return;try{await remove(getDbRef(`settings/checkout_config/places/${id}`));showToast('Place deleted.','success');}catch(e){showToast('Failed to delete place.','error');}};
+        window.handleSaveOrderCutoff=async function(){if(!window.appState.isAdmin)return showToast('Admin access required.','error');const value=document.getElementById('orderCutoffTime').value;if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value))return showToast('Choose a valid time.','error');try{await set(getDbRef('settings/order_config/cutoffTime'),value);window.appState.settings.orderCutoffTime=value;renderGallery();showToast(`Same-day cutoff set to ${formatOrderCutoffTime(value)} Malaysia time.`,'success');}catch(e){showToast('Failed to save cutoff time.','error');}};
+
+        window.productOrderModalState={productId:'',date:'',qty:1,placeId:'',customer:'',note:''};
+        function renderProductOrderModalIfOpen(){const modal=document.getElementById('productOrderModal');if(modal&&!modal.classList.contains('hidden')&&window.productOrderModalState.productId)renderProductOrderModal();}
+        window.openProductCheckout=function(productId){const product=getProduct(productId);if(!product||product.active===false)return showToast('This product is not available.','error');const dates=getAvailableProductDates(productId,30);window.productOrderModalState={productId,date:dates[0]||'',qty:1,placeId:'',customer:'',note:''};renderProductOrderModal();const modal=document.getElementById('productOrderModal');modal?.classList.remove('hidden');modal?.classList.add('flex');document.body.style.overflow='hidden';};
+        window.closeProductOrderModal=function(event){if(event&&event.target!==event.currentTarget)return;const modal=document.getElementById('productOrderModal');if(!modal)return;modal.classList.add('hidden');modal.classList.remove('flex');document.body.style.overflow='';};
+        document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeProductOrderModal();});
+        window.setPopupOrderField=function(field,value){const st=window.productOrderModalState;if(!st)return;st[field]=value;if(field==='date'){const cap=getEffectiveOrderCapacity(value,st.productId);if(cap.limit>0)st.qty=Math.min(Math.max(1,st.qty),Math.max(1,cap.remaining));}renderProductOrderModal();};
+        window.changePopupOrderQty=function(delta){const st=window.productOrderModalState;const cap=st?.date?getEffectiveOrderCapacity(st.date,st.productId):null;const max=cap?.limit>0?Math.max(1,cap.remaining):99;st.qty=Math.max(1,Math.min(max,Number(st.qty||1)+Number(delta||0)));renderProductOrderModal();};
+        function renderProductOrderModal(){
+            const content=document.getElementById('productOrderModalContent');const st=window.productOrderModalState;const product=st?.productId?getProduct(st.productId):null;if(!content||!product)return;
+            const dates=getAvailableProductDates(product.id,30);if(!dates.includes(st.date))st.date=dates[0]||'';
+            const cap=st.date?getEffectiveOrderCapacity(st.date,product.id):null;const max=cap?.limit>0?Math.max(1,cap.remaining):99;st.qty=Math.max(1,Math.min(Number(st.qty||1),max));const qty=st.qty;
+            const photo=String(product.imageUrl||product.image||product.photo||'').trim();const price=Math.max(0,Number(product.defaultPrice||0));const subtotal=price*qty;const place=window.appState.checkoutPlaces.find(p=>p.id===st.placeId)||null;const cod=getCodCharge(subtotal,place);const total=subtotal+cod;
+            const productReviews=window.appState.reviews.filter(r=>r.productId===product.id);const averageRating=productReviews.length?productReviews.reduce((sum,r)=>sum+Math.max(0,Math.min(5,Number(r.rating||0))),0)/productReviews.length:0;const ratingUi=productReviews.length?`<div class="flex items-center gap-1.5 mt-2 text-[10px]"><span class="text-amber-500">${Array.from({length:5},(_,i)=>`<i class="fa-solid fa-star ${i<Math.round(averageRating)?'':'text-slate-200'}"></i>`).join('')}</span><span class="text-slate-500 font-semibold">${averageRating.toFixed(1)} · ${productReviews.length} review${productReviews.length===1?'':'s'}</span></div>`:'<div class="text-[9px] text-slate-400 mt-2">No customer reviews yet</div>';
+            const validMin=place&&st.qty>=Math.max(1,Number(place.minBoxes||1))&&subtotal>=Math.max(0,Number(place.minAmount||0));
+            const minText=place?`Minimum: ${Math.max(1,Number(place.minBoxes||1))} box(es)${Number(place.minAmount||0)>0?` and RM ${Number(place.minAmount).toFixed(2)} subtotal`:''}.`:'Choose a delivery/COD place to view its minimum order and fee.';
+            const datesHTML=dates.length?`<select id="popupOrderDate" onchange="setPopupOrderField('date',this.value)" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-3 text-xs bg-white">${dates.map(d=>{const c=getEffectiveOrderCapacity(d,product.id);const avail=c.limit>0?`${c.remaining} boxes left`:'Available';return `<option value="${d}" ${d===st.date?'selected':''}>${formatProductDateLabel(d)} · ${avail}</option>`;}).join('')}</select><div class="text-[9px] text-slate-500 mt-1">Only valid dates for this product are listed. Same-day orders close at ${formatOrderCutoffTime()} MYT.</div>`:'<div class="rounded-xl border border-rose-200 bg-rose-50 text-rose-700 p-3 text-[10px]">No order dates are currently available for this product.</div>';
+            const placesHTML=window.appState.checkoutPlaces.length?`<option value="">Choose delivery / COD place</option>`+window.appState.checkoutPlaces.map(p=>`<option value="${escapeHtml(p.id)}" ${p.id===st.placeId?'selected':''}>${escapeHtml(p.name)}</option>`).join(''):'<option value="">No delivery places configured</option>';
+            content.innerHTML=`<div class="space-y-4"><div class="relative rounded-2xl overflow-hidden border border-choco-100 bg-choco-50">${photo?`<img src="${escapeHtml(photo)}" alt="${escapeHtml(product.name)}" class="product-checkout-modal-image">`:`<div class="product-checkout-modal-image flex items-center justify-center text-6xl text-choco-400"><i class="fa-solid ${escapeHtml(product.icon||'fa-cookie-bite')}"></i></div>`}<span class="absolute top-3 left-3 bg-white/95 border border-choco-100 rounded-full px-2.5 py-1 text-[9px] font-extrabold text-choco-800">${escapeHtml(getProductCategory(product))}</span></div>
+            <div class="flex items-start justify-between gap-3"><div class="min-w-0"><h2 id="productOrderModalTitle" class="font-serif text-xl font-bold text-choco-900">${escapeHtml(product.name)}</h2>${product.size?`<div class="text-[10px] text-slate-500 mt-1">${escapeHtml(product.size)}</div>`:''}<p class="text-[11px] text-slate-600 leading-relaxed mt-2">${escapeHtml(product.description||'Freshly prepared with care.')}</p>${ratingUi}</div><div class="text-right shrink-0"><div class="text-[8px] text-slate-400 uppercase font-bold">Price / box</div><div class="text-xl font-extrabold text-choco-700">RM ${price.toFixed(2)}</div></div></div>
+            <div class="rounded-2xl border border-choco-100 p-3"><label for="popupOrderDate" class="text-xs font-extrabold text-choco-900"><i class="fa-solid fa-calendar-days mr-1 text-choco-600"></i>Available order date</label>${datesHTML}</div>
+            <div class="rounded-2xl border border-slate-200 p-3 flex items-center justify-between gap-3"><div><div class="text-xs font-extrabold text-choco-900">Quantity (boxes)</div><div class="text-[9px] text-slate-500 mt-1">${cap?.limit>0?`${cap.remaining} box(es) remaining`: 'No daily limit'}</div></div><div class="flex items-center gap-2"><button type="button" onclick="changePopupOrderQty(-1)" class="w-9 h-9 rounded-xl border bg-white"><i class="fa-solid fa-minus"></i></button><span class="font-extrabold text-base w-6 text-center">${st.qty}</span><button type="button" onclick="changePopupOrderQty(1)" ${st.qty>=max?'disabled':''} class="w-9 h-9 rounded-xl border bg-white disabled:opacity-40"><i class="fa-solid fa-plus"></i></button></div></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2"><div><label for="popupOrderCustomer" class="text-[10px] font-semibold text-slate-600">Customer Name *</label><input id="popupOrderCustomer" value="${escapeHtml(st.customer)}" oninput="capturePopupOrderText('customer',this.value)" maxlength="80" placeholder="Your name" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-3 text-xs bg-white"></div><div><label for="popupOrderPlace" class="text-[10px] font-semibold text-slate-600">Delivery / COD Place *</label><select id="popupOrderPlace" onchange="setPopupOrderField('placeId',this.value)" class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-3 text-xs bg-white">${placesHTML}</select></div></div>
+            <div><label for="popupOrderNote" class="text-[10px] font-semibold text-slate-600">Order Note (optional)</label><textarea id="popupOrderNote" rows="2" maxlength="300" oninput="capturePopupOrderText('note',this.value)" placeholder="Delivery instructions, preferred timing, etc." class="w-full mt-1 border border-slate-200 rounded-xl px-3 py-3 text-xs bg-white">${escapeHtml(st.note)}</textarea></div>
+            <div class="rounded-2xl bg-amber-50 border border-amber-200 p-3.5 space-y-2"><div class="flex justify-between gap-3 text-[10px]"><span class="text-slate-600">Product subtotal (${st.qty} × RM ${price.toFixed(2)})</span><span class="font-bold text-choco-900">RM ${subtotal.toFixed(2)}</span></div><div class="flex justify-between gap-3 text-[10px]"><span class="text-slate-600">COD ${place?`· ${escapeHtml(place.name)}`:''}</span><span class="font-bold text-choco-900">RM ${cod.toFixed(2)}</span></div><div class="border-t border-amber-200 pt-2 flex justify-between items-center gap-3"><span class="text-xs font-extrabold text-choco-900">Final Total</span><span class="text-2xl font-extrabold text-choco-900">RM ${total.toFixed(2)}</span></div><div class="text-[9px] ${place&&!validMin?'text-rose-600':'text-slate-500'}">${escapeHtml(minText)}${place&&!validMin?' Minimum order is not met yet.':''}</div><div class="text-[9px] text-slate-500">COD charge is included in the final total. Cake sales reporting excludes the COD fee.</div></div>
+            <button id="popupPlaceOrderBtn" type="button" onclick="window.submitProductOrderFromModal()" ${!dates.length||!place||!validMin||!st.customer.trim()?'disabled':''} class="w-full min-h-[50px] rounded-xl bg-choco-700 hover:bg-choco-800 disabled:bg-slate-300 text-white text-xs font-extrabold shadow-md flex items-center justify-center gap-2"><i class="fa-solid fa-lock"></i> Place Order · RM ${total.toFixed(2)}</button><button type="button" onclick="window.closeProductOrderModal()" class="w-full py-2 text-[10px] font-bold text-slate-500">Cancel and keep browsing</button></div>`;
+        }
+        window.setPopupOrderField=function(field,value){const st=window.productOrderModalState;st[field]=value;if(field==='date'){const cap=getEffectiveOrderCapacity(value,st.productId);const max=cap.limit>0?Math.max(1,cap.remaining):99;st.qty=Math.min(Math.max(1,Number(st.qty||1)),max);}renderProductOrderModal();};
+        window.capturePopupOrderText=function(field,value){const st=window.productOrderModalState;st[field]=value;const product=getProduct(st.productId);const place=window.appState.checkoutPlaces.find(p=>p.id===st.placeId)||null;const subtotal=Number(product?.defaultPrice||0)*Math.max(1,Number(st.qty||1));const minOk=place&&Number(st.qty||1)>=Math.max(1,Number(place.minBoxes||1))&&subtotal>=Math.max(0,Number(place.minAmount||0));const btn=document.getElementById('popupPlaceOrderBtn');if(btn)btn.disabled=!(st.date&&place&&minOk&&String(st.customer||'').trim());};
+        window.changePopupOrderQty=function(delta){const st=window.productOrderModalState;if(!st?.productId)return;const cap=st.date?getEffectiveOrderCapacity(st.date,st.productId):null;const max=cap?.limit>0?Math.max(1,cap.remaining):99;st.qty=Math.max(1,Math.min(max,Number(st.qty||1)+Number(delta||0)));renderProductOrderModal();};
+        window.submitProductOrderFromModal=async function(){
+            if(window.orderSubmitBusy)return;
+            const st=window.productOrderModalState;const product=getProduct(st.productId);
+            if(!product)return showToast('Please choose a product.','error');
+            if(!st.date)return showToast('This product has no available order dates.','error');
+            const place=window.appState.checkoutPlaces.find(p=>p.id===st.placeId);
+            if(!place)return showToast('Please choose a delivery/COD place.','error');
+            const qty=Math.max(1,Number(st.qty||1));const subtotal=Number(product.defaultPrice||0)*qty;
+            if(qty<Math.max(1,Number(place.minBoxes||1)))return showToast(`${place.name} requires at least ${place.minBoxes||1} box(es).`,'error');
+            if(subtotal<Math.max(0,Number(place.minAmount||0)))return showToast(`${place.name} requires a minimum subtotal of RM ${Number(place.minAmount).toFixed(2)}.`,'error');
+            const btn=document.getElementById('popupPlaceOrderBtn');if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-1"></i> Placing order…';}
+            document.getElementById('orderProduct').value=product.id;document.getElementById('orderDate').value=st.date;document.getElementById('orderQty').value=String(qty);document.getElementById('orderCustomer').value=String(st.customer||'').trim();document.getElementById('orderNote').value=String(st.note||'').trim();document.getElementById('orderPlace').value=place.id;
+            try { await window.handleSaveOrder(); } finally { const modal=document.getElementById('productOrderModal');if(modal&&!modal.classList.contains('hidden'))renderProductOrderModal(); }
+        };
+        window.closeProductOrderModal=function(event){if(event&&event.target!==event.currentTarget)return;const modal=document.getElementById('productOrderModal');if(!modal)return;modal.classList.add('hidden');modal.classList.remove('flex');document.body.style.overflow='';};
+        document.addEventListener('keydown',e=>{if(e.key==='Escape')window.closeProductOrderModal();});
 
         window.handleSaveQrSettings = async function() {
             const newSettings = {
@@ -4802,15 +4474,14 @@
             renderMonthFilter();
             renderSalesMonthFilter();
             renderProducts();
-            renderGallery();
-            renderCheckoutPlaceSelector();
-            renderCheckoutPlaceAdminList();
             renderIngredients();
             if (!document.getElementById('ingEditId')?.value) resetIngredientForm();
             renderSales();
             renderOrders();
             renderOrderCapacity();
-            renderOrderCutoffNotice();
+            updateOrderModeUi();
+            renderGallery();
+            renderCheckoutPlacesAdminList();
             renderReviews();
             renderSettingsAndPayment();
             updateCalculationsAndDashboard();
